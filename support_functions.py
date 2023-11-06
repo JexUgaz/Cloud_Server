@@ -1,46 +1,109 @@
-import inquirer,tabulate,requests,getpass
+import tabulate,requests,getpass
+from entities.SliceEntity import Slice
+from entities.VirtualMachineEntity import VirtualMachine
+from helpers import *
 
 def crearSlice():
-    opciones = [
-        inquirer.List("opcion",
-                      message="Seleccione la forma de despliegue  ",
-                      choices=[
-                          ("Predeterminado", "Predeterminado"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Predeterminado":
-        topologiaYaPuesta()
-    else:
-        print("Ha seleccionado " + seleccion)
+    clearScreen()
+    setTitle(title="CREAR SLICE")
+    nombreSlice=input("Indique el nombre de su slice: ")
 
-def imagenes():
-    opciones = [
-        inquirer.List("opcion",
-                      message="Seleccione entre las opciones ",
-                      choices=[
-                          ("Agregar imagen", "Agregar imagen"),
-                          ("Listar imagenes", "Listar imagenes"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Agregar imagen":
-        agregarImagen()
-    elif seleccion == "Listar imagenes":
-        listarImagenes()
-    else:
-        menu()
+    if nombreSlice=="":
+        printWaiting("Debe ingresar un nombre...CREACIÓN CANCELADA")
+        return
+    print("")
+    setBarra(text="Cantidad de VMs",enter=True)
+    print("OJO: Solo puede crear entre 2 a 5 VMs")
+    try:
+        cantidad= int(input("Indique la cantidad de VMs en el slice, ('0' para Cancelar): "))
+        if(cantidad==0):
+            printWaiting("Cancelado!")
+        else:    
+            if(cantidad>=2 and cantidad<=5):
+                print("")
+                topologiaSelected,listVM=listarTopologias(cant_vm=cantidad)
+                clearScreen()
+                slice=Slice(id_vlan=None,nombre=nombreSlice,vms=listVM,nombre_dhcp='',topologia=topologiaSelected,infraestructura=None,fecha_creacion=None,usuario_id=None,subred=None)
+                detallesCreacionExitosa(slice)
+            else:
+                printWaiting("Cantidad de VMs inválida.")
+    except ValueError:
+        printWaiting("Por favor, ingrese un número válido.")
 
-def agregarImagen():
-    filename = input("Seleccionar archivo: ")
-    print("Imagen agregada correctamente")
-    menu()
+def detallesCreacionExitosa(slice:Slice):
+    setTitle(title="Creación Exitosa")
+    print()
+    setBarra(text="Slice",enter=True)
+    print(f"Nombre: {slice.nombre}")
+    print(f"N° Vms: {len(slice.vms)}")
+    print(f"Topología: {slice.topologia}\n")
+    i=1
+    for vm in slice.vms:
+        setBarra(text=f"VM #{i}")
+        print(f"Nombre: {vm.nombre}")
+        print(f"Imagen: {vm.imagen}")
+        print(f"RAM: {vm.sizeRam}MB")
+        i=i+1
+    printWaiting("Presione Enter, para regresar...")
+
+
+def listarTopologias(cant_vm):
+    setBarra(text=f"Topologías para {cant_vm} VMs",enter=True)
+    choices=["Arbol","Malla","Anillo","Lineal","Bus","Cancelar"]
+    topologiaSelected=setListOptionsShell(
+        message="Seleccione la topología",
+        choices=choices
+    )
+    if(choices[-1]!=topologiaSelected):
+        """ubicaciones=[]
+        idUser=1 # ID del usuario, se guarda al loguearse
+        n_Vms=4 #N° de VMs a crear (por defecto), debe ingresar el usuario
+        size_ram= [100,100,100,100] #100Mbytes,100Mbytes,100Mbytes,100Mbytes RAM de cada VMs (Debe ingresar)
+        idTopologia=1 # ID de la Topolía (por defecto: Arbol, por ahora)
+        """
+        listVM=[]
+        for i in range(cant_vm):
+            print()
+            salir,virtualMachine=setDetailsVM(i)
+            if salir:
+                break
+            listVM.append(virtualMachine)
+        return topologiaSelected,listVM
+    else:
+        printWaiting("CREACIÓN CANCELADA...")
+        return None,None
+
+def setDetailsVM(i):
+    setBarra(text=f"Especifique a detalles la VM #{i + 1}",enter=True)
+    nombreVM=input("Indique el nombre de la VM: ")
+
+    if nombreVM=="":
+        printWaiting("Debe ingresar un nombre...CREACIÓN CANCELADA")
+        return
+    print("")
+    images=["cirros-image.img", "ubuntu-iso-20.04.iso","Cancelar"]
+    imagenSelected=setListOptionsShell(
+        message="Indique la imagen: ",
+        choices=images
+    )
+    if(images[-1]==imagenSelected):
+        return True,None
+    
+    print()
+    print("OJO: La memoria RAM debe estar entre 100 a 200 (MB).")
+    try:
+        memoria=float(input("Indique la memoria RAM de la VM: "))
+        if (memoria>=100 and memoria<=200):
+            print(f"Se creará la VM #{i+1} con la imagen {imagenSelected} y memoria RAM de {memoria}MB")
+            return False,VirtualMachine(id=None,nombre=nombreVM,sizeRam=memoria,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagenSelected)
+        else:
+            printWaiting("Valor fuera del rango establecido...CREACIÓN CANCELADA")
+    except ValueError:
+        printWaiting("Valor inválido...CREACIÓN CANCELADA")           
+    return True,None
+
+
+
 
 def listarImagenes():
     imagenesNombres = ["cirros-image.img", "ubuntu-iso-20.04.iso"]
@@ -50,92 +113,86 @@ def listarImagenes():
 
     headers = ["N°", "Nombre de la imagen"]
     table = tabulate.tabulate(imagen_data, headers, tablefmt="fancy_grid")
-    print(table)
+    while True:
+        clearScreen()
+        setBarra(text="Lista de Imagenes",enter=True)
+        print(table)
+        
+        choices=["Volver","Borrar una Imagen"]
+        selection=setListOptionsShell(
+            message="Seleccione: ",
+            choices=choices
+        )
+        if selection==choices[1]:
+            while True:
+                clearScreen()
+                print(table)
+                try:
+                    indice=int(input("Indique el índice de la imagen que desea seleccionar (1-" + str(len(imagen_data)) + "), '0' para Cancelar: "))
+                    if indice==0:
+                        break
+                    if 1 <= indice and indice <= len(imagen_data):
+                        printWaiting(f"Ha seleccionado la imagen para borrar: {imagenesNombres[indice-1]}")
+                        break 
+                    else:
+                        printWaiting("Por favor, ingrese un número válido dentro del rango.")
+                    
+                except ValueError:
+                    printWaiting("Por favor, ingrese un número válido.")
+        else:
+            break
+
+def imagenes():
+    while True:
+        clearScreen()
+        setBarra(text="Imágenes",enter=True)
+        choices=["Agregar imagen","Listar imágenes","Volver"]
+        seleccion = setListOptionsShell(
+            message="Seleccione entre las opciones ",
+            choices=choices
+        ) 
+        
+        if seleccion == choices[0]:
+            agregarImagen()
+        elif seleccion == choices[1]:
+            listarImagenes()
+        else:
+            break
+
+def agregarImagen():
+    clearScreen()
+    setBarra(text="Agregar Imagen",enter=True)
+    filename = input("Seleccionar archivo: ")
+    printWaiting("Imagen agregada correctamente")
+
+def menu(api):
+    clearScreen()
+    if(api=="Openstack"):
+        printWaiting("En Construcción...")
+        return 
+        
+    choices=["Ver mis slices","Crear nuevo slice","Editar slice","Imágenes","Volver"]
 
     while True:
-        try:
-            print("Indique el número de la imagen que desea seleccionar (1-" + str(len(imagen_data)) + "): ")
-            numero = int(input())
-            if 1 <= numero <= len(imagen_data):
-                print("Ha seleccionado la imagen para borrar: " + imagen_data[numero - 1][1])
-                break  # Sale del bucle si el número es válido
-            else:
-                print("Por favor, ingrese un número válido dentro del rango.")
-        except ValueError:
-            print("Por favor, ingrese un número válido.")
-
-def elegirImagen():
-    opciones = [
-        inquirer.List("opcion",
-                      message="Seleccione la imagen de su maquina virtual ",
-                      choices=[
-                          ("cirros-image.img", "cirros-image.img"),
-                          ("ubuntu-iso-20.04.iso", "ubuntu-iso-20.04.iso"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Volver":
-        menu()
-    else:
-        print("Ha seleccionado " + seleccion)
-
-def zonasDeDisponibilidad():
-    opciones = [
-        inquirer.List("opcion",
-                      message="Seleccione la zona de disponibilidad ",
-                      choices=[
-                          ("Worker 1", "Worker 1"),
-                          ("Worker 2", "Worker 2"),
-                          ("Worker 3", "Worker 3"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Volver":
-        print("Saliendo del programa.")
-    elif seleccion=="Worker 1":
-        return str(0)
-    elif seleccion=="Worker 2":
-        return str(1)
-    elif seleccion=="Worker 3":
-        return str(2)
-    else:
-        print("Ha seleccionado " + seleccion)
-    menu()
-
-def menu():
-    opciones = [
-        inquirer.List("opcion",
-                      message="¿Qué desea realizar el día de hoy? ",
-                      choices=[
-                          ("Ver mis slices", "Ver mis slices"),
-                          ("Crear nuevo slice", "Crear nuevo slice"),
-                          ("Editar slice", "Editar slice"),
-                          ("Imágenes", "Imágenes"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Ver mis slices":
-        listarSliceUsuario()
-    elif seleccion == "Crear nuevo slice":
-        crearSlice()
-    elif seleccion == "Imágenes":
-        imagenes()
-    elif seleccion == "Editar slice":
-        personalizarTopología()
-    elif seleccion == "Volver":
-        return
-
-def setApiNewSlice(ubicaciones,idUser,n_Vms,size_ram,idTopologia):
+        clearScreen()
+        setBarra(text=f"API: {api}",enter=True)
+        seleccion = setListOptionsShell(
+            message="¿Qué desea realizar el día de hoy? ",
+            choices=choices
+        )
+        
+        if seleccion == choices[0]:
+            listarSliceUsuario()
+        elif seleccion == choices[1]:
+            crearSlice()
+        elif seleccion == choices[3]:
+            imagenes()
+        elif seleccion == choices[2]:
+            clearScreen()
+            printWaiting("En Construcción...")
+        elif seleccion == choices[4]:
+            break
+"""def setApiNewSlice(ubicaciones,idUser,n_Vms,size_ram,idTopologia):
     url = 'http://localhost:5001/setNewSlice'
     data = {
         'idUser':idUser,
@@ -152,212 +209,82 @@ def setApiNewSlice(ubicaciones,idUser,n_Vms,size_ram,idTopologia):
         print(response.json())
     else:
         print(f"Error en la solicitud: {response.status_code}")
-        print(response.text)
-        
-def topologiaYaPuesta():
-    print("Escogiendo cualquier opcion de topología se creará 4 VM's por defecto")    
-    #------INICIAMOS A OBTENER LA DATA PARA CREAR EL SLICE---------#
-
-    ubicaciones=[]
-    idUser=1 # ID del usuario, se guarda al loguearse
-    n_Vms=4 #N° de VMs a crear (por defecto), debe ingresar el usuario
-    size_ram= [100,100,100,100] #100Mbytes,100Mbytes,100Mbytes,100Mbytes RAM de cada VMs (Debe ingresar)
-    idTopologia=1 # ID de la Topolía (por defecto: Arbol, por ahora)
-
-    for i in range(n_Vms):
-        print("Elija la zona de disponibilidad para la VM #" + str(i + 1))
-        ubicaciones.append(zonasDeDisponibilidad())
-
-    for i in range(n_Vms):
-        print("Elija la imagen para la VM #" + str(i + 1))
-        elegirImagen()
-    
-    
-    print("Se a realizado la creacion de sus VM's en la zona de disponibilidad que eligio")
-
-    opciones = [
-        inquirer.List("opcion",
-                      message="Elige el tipo de topología ",
-                      choices=[
-                          ("Arbol", "Arbol"),
-                          ("Malla", "Malla"),
-                          ("Anillo", "Anillo"),
-                          ("Lineal", "Lineal"),
-                          ("Bus", "Bus"),
-                          ("Salir", "Salir"),
-                      ])
-    ] 
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado la topología tipo " + seleccion)
-
-        setApiNewSlice(
-            ubicaciones=ubicaciones,
-            idUser=idUser,
-            n_Vms=n_Vms,
-            size_ram=size_ram,
-            idTopologia=idTopologia
-        ) #FUNCION QUE CONTACTA A LA API, Y CREE UN SLICE
-    
-    menu()
-
-def personalizarTopología():
-    ListasSlices = [['1', 'Tarea', "21/10/2023", 2, 1],
-                     ['2', 'Laboratorio', "23/05/2023", 7, 8],
-                     ['3', 'Examen', "11/12/2023", 7, 8]]
-    headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
-    table = tabulate.tabulate(ListasSlices, headers, tablefmt="fancy_grid")
-    print(table)
-
-    while True:
-        try:
-            print("Indique el número de slice que quiere editar (1-" + str(len(ListasSlices)) + "): ")
-            numero = int(input())
-            if 1 <= numero <= len(ListasSlices):
-                print("Se ha editado el slice: " + str(numero))
-
-                opciones = [
-                    inquirer.List("opcion",
-                                  message="Para personalizar su topología elija entre ",
-                                  choices=[
-                                      ("Añada maquina virtual (VM)", "Añada maquina virtual (VM)"),
-                                      ("Añadir Enlace", "Añadir Enlace"),
-                                      ("Salir", "Salir"),
-                                  ])
-                ] 
-                respuestas = inquirer.prompt(opciones)
-                seleccion = respuestas["opcion"]
-                
-                if seleccion == "Añada maquina virtual (VM)":
-                    print("Cantidad de VM a emplear: ")
-                    cantidad = int(input())  # Convertir la entrada a un número entero
-
-                    for i in range(cantidad):
-                        print("Elija la zona de disponibilidad para la VM #" + str(i + 1))
-                        zonasDeDisponibilidad()
-                    
-                
-                else:
-                    print("Ha seleccionado la topología tipo " + seleccion)
-
-                break  # Sale del bucle
-            else:
-                print("Por favor, ingrese un número válido dentro del rango.")
-        except ValueError:
-            print("Por favor, ingrese un número válido.")
-
-def listarSlicesAdmin():
-    ListasAlumnos = [['1', 'Tarea', "21/10/2023", 2, 1],
-                     ['2', 'Laboratorio', "23/05/2023", 7, 8],
-                     ['3', 'Examen', "11/12/2023", 7, 8]]
-
-    headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
-    table = tabulate.tabulate(ListasAlumnos, headers, tablefmt="fancy_grid")
-    print(table)
-
-    opciones = [
-        inquirer.List("opcion",
-                      message="¿Desea borrar alguno de sus slices? ",
-                      choices=[
-                          ("Sí", "Si"),
-                          ("No", "No"),
-                          ("Salir", "Salir"),
-                      ])
-    ] 
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Si":
-        while True:
-            try:
-                print("Indique el número de slice a borrar (1-" + str(len(ListasAlumnos)) + "): ")
-                numero = int(input())
-                if 1 <= numero <= len(ListasAlumnos):
-                    print("Se ha borrado el slice: " + str(numero))
-                    break  
-                else:
-                    print("Por favor, ingrese un número válido dentro del rango.")
-            except ValueError:
-                print("Por favor, ingrese un número válido.")
-    elif seleccion == "No":
-        menu()
+        print(response.text)"""
 
 def listarSliceUsuario():
-    ListasAlumnos = [['1', 'Tarea', "21/10/2023", 2, 1],
+    listasAlumnos = [['1', 'Tarea', "21/10/2023", 2, 1],
                      ['2', 'Laboratorio', "23/05/2023", 7, 8],
                      ['3', 'Examen', "11/12/2023", 7, 8]]
 
     headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
     
-    # Utiliza la función tabulate desde el módulo tabulate
-    table = tabulate.tabulate(ListasAlumnos, headers, tablefmt="fancy_grid")
-    print(table)
-    opciones = [
-        inquirer.List("opcion",
-                      message="¿Desea borrar alguno de sus slices? ",
-                      choices=[
-                          ("Sí", "Si"),
-                          ("No", "No"),
-                          ("Salir", "Salir"),
-                      ])
-    ] 
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Si":
-        while True:
+    choices=["Ver más detalles de un slice","Borrar un slice","Volver"]
+
+    while True:
+        clearScreen()
+        setBarra(text="Sus Slices",enter=True)
+        print(tabulate.tabulate(listasAlumnos, headers, tablefmt="fancy_grid"))
+
+        seleccion = setListOptionsShell(
+            message="Seleccione una opción: ",
+            choices=choices
+        ) 
+        if seleccion==choices[0]:
             try:
-                print("Indique el número de slice a borrar (1-" + str(len(ListasAlumnos)) + "): ")
-                numero = int(input())
-                if 1 <= numero <= len(ListasAlumnos):
-                    print("Se ha borrado el slice: " + str(numero))
-                    menu()
-                    break  
+                numero=int(input("Indique el índice del slice a detallar (1-" + str(len(listasAlumnos)) + "): "))
+                if 1 <= numero and numero <= len(listasAlumnos):
+                    clearScreen()
+                    setBarra(text=f"Los detalles del slice {numero}", enter=True)
+                    printWaiting(tabulate.tabulate([listasAlumnos[numero-1]], headers, tablefmt="fancy_grid"))  
                 else:
-                    print("Por favor, ingrese un número válido dentro del rango.")
+                    printWaiting("Por favor, ingrese un número válido dentro del rango.")
             except ValueError:
-                print("Por favor, ingrese un número válido.")
-    elif seleccion == "No":
-        menu()
+                    printWaiting("Por favor, ingrese un índice válido.")                 
+        elif seleccion==choices[1]:
+            try:
+                numero=int(input("Indique el índice del slice a borrar (1-" + str(len(listasAlumnos)) + "): "))
+                if 1 <= numero and numero <= len(listasAlumnos):
+                    printWaiting("Se ha borrado el slice: " + str(numero))
+                else:
+                    printWaiting("Por favor, ingrese un número válido dentro del rango.")
+            except ValueError:
+                printWaiting("Por favor, ingrese un índice válido.") 
+        else:
+            break 
 
 def autenticar_usuario(user, password):
-    usuarios_regitrados={"niurka":"123456","jex":"654321"}
+    usuarios_regitrados={"Niurka":"123456","Jex":"654321"}
     if user in usuarios_regitrados:
         if usuarios_regitrados[user]==password:
-            return True
+            return True,user
         
-    return False
+    return False,None
 
 def main_function():
-    print("Bienvenido a cloud help")
-    print("Inicie sesión para comenzar ")
-    print("")
+    clearScreen()
+    setBarra(text="Bienvenido a cloud help")
+    print("Inicie sesión para comenzar\n")
 
     usuario = input('Ingrese su usuario: ')
     contrasena =  getpass.getpass('Ingrese su contraseña:')
-    is_autenthicated=autenticar_usuario(usuario,contrasena)
+    is_autenthicated,user=autenticar_usuario(usuario,contrasena)
     if not is_autenthicated:
-        print("Autenticación fallida")
-        return None
+        printWaiting("Autenticación fallida")
+        return False
     
-    opciones = [
-        inquirer.List("opcion",
-                      message="Seleccione la plataforma ",
-                      choices=[
-                          ("Linux", "Linux"),
-                          ("OpenStack", "OpenStack"),
-                          ("Salir", "Salir"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
-        menu()
+    salir=False
+    while not salir:
+        clearScreen()
+        setBarra(text=f"Bienvenido, {user}!",enter=True)
+        seleccion = setListOptionsShell(
+            message="Seleccione la plataforma",
+            choices=["Linux","Openstack","Cerrar Sesión"]
+        ) 
+        
+        if seleccion == "Cerrar Sesión":
+            print("Cerrando sesión...")
+            salir=True
+        else:
+            menu(api=seleccion)
+    return False
+
