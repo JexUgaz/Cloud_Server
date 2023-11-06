@@ -1,7 +1,11 @@
 import tabulate,requests,getpass
 from entities.SliceEntity import Slice
 from entities.VirtualMachineEntity import VirtualMachine
+from graphs import GraphHelper
 from helpers import *
+
+listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
+
 
 def crearSlice():
     clearScreen()
@@ -44,17 +48,24 @@ def detallesCreacionExitosa(slice:Slice):
         print(f"Imagen: {vm.imagen}")
         print(f"RAM: {vm.sizeRam}MB")
         i=i+1
-    printWaiting("Presione Enter, para regresar...")
-
+    filename=""
+    if slice.topologia == listTopologias[0]:
+        filename=GraphHelper.drawArbol(slice.vms)
+    elif slice.topologia==listTopologias[1]:
+        filename=GraphHelper.drawAnillo(slice.vms)
+    printWaiting("")
+    try:
+        os.remove(filename)
+    except Exception as e:
+        return
 
 def listarTopologias(cant_vm):
     setBarra(text=f"Topologías para {cant_vm} VMs",enter=True)
-    choices=["Arbol","Malla","Anillo","Lineal","Bus","Cancelar"]
     topologiaSelected=setListOptionsShell(
         message="Seleccione la topología",
-        choices=choices
+        choices=listTopologias
     )
-    if(choices[-1]!=topologiaSelected):
+    if(listTopologias[-1]!=topologiaSelected):
         """ubicaciones=[]
         idUser=1 # ID del usuario, se guarda al loguearse
         n_Vms=4 #N° de VMs a crear (por defecto), debe ingresar el usuario

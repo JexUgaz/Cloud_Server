@@ -10,4 +10,4 @@ class VirtualMachine:
         self.imagen = imagen
 
     def __str__(self):
-        return f"VirtualMachine(id={self.id}, nombre='{self.nombre}', sizeRam={self.sizeRam}, fechaCreacion='{self.fechaCreacion}', dirMac='{self.dirMac}', portVNC={self.portVNC}, zonaID={self.zonaID}, imagenID={self.imagenID})"
+        return f"VirtualMachine(id={self.id}, nombre='{self.nombre}', sizeRam={self.sizeRam}, fechaCreacion='{self.fechaCreacion}', dirMac='{self.dirMac}', portVNC={self.portVNC}, zonaID={self.zonaID}, imagenID={self.imagen})"
