@@ -3,6 +3,23 @@ from entities.SliceEntity import Slice
 from entities.VirtualMachineEntity import VirtualMachine
 from graphs import GraphHelper
 from helpers import *
+from openstack_sdk import password_authentication_with_unscoped_authorization
+from dotenv import load_dotenv
+
+load_dotenv()
+# ACCESS NODE IP
+ACCESS_NODE_IP = os.getenv("ACCESS_NODE_IP") # ------------------ DONE
+# OPENSTACK SERVICE PORTS
+KEYSTONE_PORT = os.getenv("KEYSTONE_PORT") # ------------------ DONE
+NEUTRON_PORT = os.getenv("NEUTRON_PORT") # ------------------ DONE
+NOVA_PORT = os.getenv("NOVA_PORT") # ------------------ DONE
+GLANCE_PORT = os.getenv("GLANCE_PORT") # ------------------ DONE
+# OPENSTACK ENDPOINTS
+KEYSTONE_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + KEYSTONE_PORT + '/v3' # ------------------ DONE
+NEUTRON_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + NEUTRON_PORT + '/v2.0' # ------------------ DONE
+NOVA_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + NOVA_PORT + '/v2.1' # ------------------ DONE
+GLANCE_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + GLANCE_PORT # ------------------ DONE
+DOMAIN_NAME = os.getenv("DOMAIN_NAME") # ------------------ DONE
 
 listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
 
@@ -261,15 +278,21 @@ def listarSliceUsuario():
             except ValueError:
                 printWaiting("Por favor, ingrese un índice válido.") 
         else:
-            break 
+            break
 
-def autenticar_usuario(user, password):
-    usuarios_regitrados={"Niurka":"123456","Jex":"654321"}
-    if user in usuarios_regitrados:
-        if usuarios_regitrados[user]==password:
-            return True,user
+def autenticar_usuario(username, password):
+    r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, username, password)
+    if r.status_code == 201:
+        user_token = r.headers['X-Subject-Token']
+        #usuario = None
+        return True, username, user_token
+
+    #usuarios_regitrados={"Niurka":"123456","Jex":"654321"}
+    #if user in usuarios_regitrados:
+    #    if usuarios_regitrados[user]==password:
+    #        return True,user
         
-    return False,None
+    return False, None, None
 
 def main_function():
     clearScreen()
@@ -278,7 +301,7 @@ def main_function():
 
     usuario = input('Ingrese su usuario: ')
     contrasena =  getpass.getpass('Ingrese su contraseña:')
-    is_autenthicated,user=autenticar_usuario(usuario,contrasena)
+    is_autenthicated,user,user_token=autenticar_usuario(usuario,contrasena)
     if not is_autenthicated:
         printWaiting("Autenticación fallida")
         return False
