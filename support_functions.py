@@ -282,10 +282,10 @@ def listarSliceUsuario():
 
 def autenticar_usuario(username, password):
     r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, username, password)
-    if r.status_code == 201:
-        user_token = r.headers['X-Subject-Token']
-        #usuario = None
-        return True, username, user_token
+    if r is not None:
+        if r.status_code == 201:
+            user_token = r.headers['X-Subject-Token']
+            return True, username, user_token
 
     #usuarios_regitrados={"Niurka":"123456","Jex":"654321"}
     #if user in usuarios_regitrados:
@@ -302,6 +302,10 @@ def main_function():
     usuario = input('Ingrese su usuario: ')
     contrasena =  getpass.getpass('Ingrese su contraseña:')
     is_autenthicated,user,user_token=autenticar_usuario(usuario,contrasena)
+    print(f'Is Autenticado: {is_autenthicated}')
+    print(f'User: {user}')
+    print(f'Token: {user_token}')
+    input('presiona enter...')
     if not is_autenthicated:
         printWaiting("Autenticación fallida")
         return False

@@ -58,8 +58,12 @@ def password_authentication_with_unscoped_authorization(auth_endpoint, user_doma
                 }
             }
         }
+    try:
+        r = requests.post(url=url, data=json.dumps(data))
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ",e)
+        r=None
         
-    r = requests.post(url=url, data=json.dumps(data))
     # status_code success = 201
     return r
 
