@@ -25,7 +25,7 @@ def main_function():
     if user.roles_id==RolesGlobal.usuario:
         showMenuUser(user=user)
     elif user.roles_id==RolesGlobal.administrador:
-        showMenuAdministrador()
+        showMenuAdministrador(user=user)
     return False
 
 if __name__ == "__main__":

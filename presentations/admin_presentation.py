@@ -1,4 +1,6 @@
 import inquirer
+from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell
+from entities.UserEntity import UserEntity
 
 def AgregarUsuario():
     print("Ha selecionado la opción de: Agregar Usuario")
@@ -8,102 +10,106 @@ def AgregarUsuario():
     codigo_pucp = input("Ingrese su codigo PUCP: ")
     contraseña = input("Ingrese su contraseña: ")
 
-def showMenuAdministrador():
-    opciones = [
-        inquirer.List("opcion",
-                      message="Bienvenido Administrador, escoja la opción que desea hacer: ",
-                      choices=[
-                          ("Usuarios", "Usuarios"),
-                          ("Imagenes", "Imagenes"),
-                          ("Slices", "Slices"),
-                          ("Alertas", "Alertas"),
-                          ("Monitoreo - Listar recursos", "Monitoreo- Listar recursos"),
-                          ("Salir", "Salir"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
-
+def showMenuAdministrador(user:UserEntity):
+    salir=False
+    while not salir:
+        clearScreen()
+        setBarra(text=f"Bienvenido Administrador, {user.nombre}!",enter=True)
+        choices=[
+            "Usuarios",
+            "Imagenes",
+            "Slices",
+            "Alertas",
+            "Monitoreo - Listar recursos",
+            "Cerrar Sesión"
+        ]
+        seleccion = setListOptionsShell(
+            message="Seleccione una opción: ",
+            choices=choices
+        ) 
+        
+        if seleccion == choices[len(choices)-1]:
+            salir=True
+        elif seleccion==choices[0]:
+            AdministradorUsuarios()
+        elif seleccion==choices[1]:
+            AdministradorImagenes()
+        elif seleccion==choices[2]:
+            AdministradorSlices()
+        elif seleccion==choices[3]:
+            AdministradorAlertas()
+        elif seleccion==choices[4]:
+            printWaiting(f"Selección: {seleccion}")
 
 def AdministradorUsuarios():
-    opciones = [
-        inquirer.List("opcion",
-                      choices=[
-                          ("Listar Usuario", "Listar Usuario"),
-                          ("Agregar Usuario", "Agregar Usuario"),
-                          ("Eliminar Usuario", "Eliminar Usuario"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
+    while True:
+        clearScreen()
+        setBarra(text="Opciones sobre los usuarios",enter=True)
+        choices=[
+                "Listar Usuario",
+                "Agregar Usuario",
+                "Eliminar Usuario",
+                "Volver"
+        ]
+        seleccion=setListOptionsShell(
+            message="Opción",
+            choices=choices
+        )
+        
+        if seleccion == choices[len(choices)-1]:
+            break
 
 
 
 def AdministradorImagenes():
-    opciones = [
-        inquirer.List("opcion",
-                      choices=[
-                          ("Listar imagenes", "Listar imagenes"),
-                          ("Agregar imagenes", "Agregar imagenes"),
-                          ("Eliminar imagenes", "Eliminar imagenes"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
-
+    while True:
+        clearScreen()
+        setBarra(text="Opciones sobre las imágenes",enter=True)
+        choices=[
+                "Listar imagenes",
+                "Agregar imagenes",
+                "Eliminar imagenes",
+                "Volver"
+        ]
+        seleccion=setListOptionsShell(
+            message="Opción",
+            choices=choices
+        )
+        if seleccion == choices[len(choices)-1]:
+            break
 
 def AdministradorSlices():
-    opciones = [
-        inquirer.List("opcion",
-                      choices=[
-                          ("Listar slices", "Listar slices"),
-                          ("Eliminar slices", "Eliminar slices"),
-                          ("Volver", "Volver"),
-                      ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
+    while True:
+        clearScreen()   
+        setBarra(text="Opciones sobre los slices",enter=True)
+        choices=[
+                "Listar slices",
+                "Eliminar slices",
+                "Volver"
+        ]
+        seleccion=setListOptionsShell(
+            message="Opción",
+            choices=choices
+        )
+        if seleccion == choices[len(choices)-1]:
+            break
 
 def AdministradorAlertas():
-    opciones = [
-        inquirer.List("opcion",
-                    message="Bienvenido Administrador, escoja el servidor del que quiera ver su alerta: ",
-                    choices=[
-                        ("Worker 1", "Worker 1"),
-                        ("Worker 2", "Worker 2"),
-                        ("Worker 3", "Worker 3"),
-                        ("Volver", "Volver"),
-                    ])
-    ]
-    respuestas = inquirer.prompt(opciones)
-    seleccion = respuestas["opcion"]
-    
-    if seleccion == "Salir":
-        print("Saliendo del programa.")
-    else:
-        print("Ha seleccionado " + seleccion)
+    while True:
+        clearScreen()   
+        setBarra(text="Seleccione el servidor para ver sus alertas: ",enter=True)
+        choices=[
+                "Worker 1",
+                "Worker 2",
+                "Worker 3",
+                "Volver"
+        ]
+        seleccion=setListOptionsShell(
+            message="Opción",
+            choices=choices
+        )
+        if seleccion == choices[len(choices)-1]:
+            break
 
 
 
