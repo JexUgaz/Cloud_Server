@@ -37,7 +37,7 @@ def password_authentication_with_scoped_authorization(auth_endpoint, user_domain
     return r
 
 def password_authentication_with_unscoped_authorization(auth_endpoint, user_domain_name, username, password):
-    url = auth_endpoint + '/auth/tokens'
+    url = auth_endpoint + '/auth/tokens'    
 
     data = \
         {
@@ -63,8 +63,6 @@ def password_authentication_with_unscoped_authorization(auth_endpoint, user_doma
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ",e)
         r=None
-        
-    # status_code success = 201
     return r
 
 def token_authentication_with_scoped_authorization(auth_endpoint, token, project_domain_id, project_name):
