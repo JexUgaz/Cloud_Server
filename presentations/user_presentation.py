@@ -4,9 +4,14 @@ from config.helpers import *
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
 from config.graphs import GraphHelper
+from services.connection_functions import add_new_image
 listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
 
+_usuario_global=None
+
 def showMenuUser(user:UserEntity):
+    global _usuario_global
+    _usuario_global=user
     salir=False
     while not salir:
         clearScreen()
@@ -54,8 +59,10 @@ def menu(api):
 def agregarImagen():
     clearScreen()
     setBarra(text="Agregar Imagen",enter=True)
-    filename = input("Seleccionar archivo: ")
-    printWaiting("Imagen agregada correctamente")
+    nombre = input("Nombre de la imagen: ")
+    link = input("Indique URL de descarga: ")
+    add_new_image(link=link,nombre=nombre,idUser=_usuario_global.id)
+    printWaiting("")
 
 
 def listarImagenes():
@@ -99,15 +106,15 @@ def imagenes():
     while True:
         clearScreen()
         setBarra(text="Imágenes",enter=True)
-        choices=["Agregar imagen","Listar imágenes","Volver"]
+        choices=["Ver mis imágenes","Agregar imagen","Eliminar Imagen","Volver"]
         seleccion = setListOptionsShell(
             message="Seleccione entre las opciones ",
             choices=choices
         ) 
         
-        if seleccion == choices[0]:
+        if seleccion == choices[1]:
             agregarImagen()
-        elif seleccion == choices[1]:
+        elif seleccion == choices[0]:
             listarImagenes()
         else:
             break

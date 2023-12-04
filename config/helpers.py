@@ -1,9 +1,13 @@
 ###########  Acciones  ###############
 import os
 import platform
-
 import inquirer
+import time
+import sys
 
+class MensajeResultados:
+	success="success"
+	failed="failed"
 
 def clearScreen():
     sys_op= platform.system()
@@ -53,3 +57,21 @@ def setTitle(title=""):
     setBarra()
     setBarra(text=title)
     setBarra(enter=True)
+
+def loading_animation():
+    global done
+    done=False
+    chars = ['\\', '-', '/']
+    i = 0
+    while not done:
+        sys.stdout.write(f'\Espere... {chars[i]}')
+        sys.stdout.flush()
+        time.sleep(0.1)
+        i = (i + 1) % len(chars)
+    
+    sys.stdout.write(f'\Espere...  Terminado!')
+    sys.stdout.flush()
+
+def cancel_loading_done():
+    global done
+    done=True

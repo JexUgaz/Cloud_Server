@@ -21,7 +21,8 @@ def main_function():
     print(f'User: {user}')
     print(f'Token: {user_token}')
     input('presiona enter...')
-
+    if user is None:
+        return
     if user.roles_id==RolesGlobal.usuario:
         showMenuUser(user=user)
     elif user.roles_id==RolesGlobal.administrador:
