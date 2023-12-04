@@ -1,6 +1,8 @@
 import inquirer
-from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell
+import tabulate
+from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell, setTitle
 from entities.UserEntity import UserEntity
+from services.admin_services import get_all_users
 
 def AgregarUsuario():
     print("Ha selecionado la opción de: Agregar Usuario")
@@ -11,8 +13,7 @@ def AgregarUsuario():
     contraseña = input("Ingrese su contraseña: ")
 
 def showMenuAdministrador(user:UserEntity):
-    salir=False
-    while not salir:
+    while True:
         clearScreen()
         setBarra(text=f"Bienvenido Administrador, {user.nombre}!",enter=True)
         choices=[
@@ -29,7 +30,7 @@ def showMenuAdministrador(user:UserEntity):
         ) 
         
         if seleccion == choices[len(choices)-1]:
-            salir=True
+            break
         elif seleccion==choices[0]:
             AdministradorUsuarios()
         elif seleccion==choices[1]:
@@ -46,9 +47,9 @@ def AdministradorUsuarios():
         clearScreen()
         setBarra(text="Opciones sobre los usuarios",enter=True)
         choices=[
-                "Listar Usuario",
+                "Listar Usuarios",
                 "Agregar Usuario",
-                "Eliminar Usuario",
+                "Bloquear Usuario",
                 "Volver"
         ]
         seleccion=setListOptionsShell(
@@ -58,7 +59,13 @@ def AdministradorUsuarios():
         
         if seleccion == choices[len(choices)-1]:
             break
-
+        elif seleccion==choices[0]:
+            clearScreen()
+            setTitle("Lista de Usuarios")
+            usuarios=get_all_users()
+            listas_usuarios = [usuario.to_list() for usuario in usuarios]
+            headers=["id","nombre","email"]
+            printWaiting(tabulate.tabulate(listas_usuarios, headers, tablefmt="fancy_grid"))
 
 
 def AdministradorImagenes():

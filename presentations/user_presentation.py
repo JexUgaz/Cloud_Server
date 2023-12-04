@@ -3,7 +3,7 @@ import tabulate
 from config.helpers import *
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
-from graphs import GraphHelper
+from config.graphs import GraphHelper
 listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
 
 def showMenuUser(user:UserEntity):

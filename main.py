@@ -1,7 +1,7 @@
 import getpass
 from config.globals import RolesGlobal
 from config.helpers import clearScreen, printWaiting, setBarra
-from connection_functions import autenticar_usuario, get_usuario_credentials
+from services.connection_functions import autenticar_usuario, get_usuario_credentials
 from presentations.admin_presentation import showMenuAdministrador
 from presentations.user_presentation import showMenuUser
 
