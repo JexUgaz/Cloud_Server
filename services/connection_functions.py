@@ -32,7 +32,6 @@ def get_usuario_credentials(username, password):
     return None
 
 def add_new_image(link, idUser, nombre):
-    # Inicia el hilo para la animación
     animation_thread = threading.Thread(target=loading_animation)
     animation_thread.start()
     
@@ -50,8 +49,8 @@ def add_new_image(link, idUser, nombre):
         result = response_data.get('result')
         msg = response_data.get('msg')
 
-        cancel_loading_done()  # Indica al hilo de animación que termine
-        animation_thread.join()  # Espera a que el hilo de animación termine
+        cancel_loading_done()  
+        animation_thread.join()  
 
         if MensajeResultados.success == result:
             print(f'\nListo! {msg}')

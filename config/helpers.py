@@ -64,12 +64,12 @@ def loading_animation():
     chars = ['\\', '-', '/']
     i = 0
     while not done:
-        sys.stdout.write(f'\Espere... {chars[i]}')
+        sys.stdout.write(f'\rEspere... {chars[i]}')
         sys.stdout.flush()
         time.sleep(0.1)
         i = (i + 1) % len(chars)
     
-    sys.stdout.write(f'\Espere...  Terminado!')
+    sys.stdout.write(f'\rEspere...  Terminado!\n')
     sys.stdout.flush()
 
 def cancel_loading_done():
