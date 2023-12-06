@@ -2,6 +2,7 @@ import json
 import threading
 import requests
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
+from entities.ImageEntity import ImagenEntity
 from entities.UserEntity import UserEntity
 from openstack_sdk import password_authentication_with_unscoped_authorization
 from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, SERVER_API_ENDPOINT
@@ -64,3 +65,34 @@ def add_new_image(link, idUser, nombre):
         cancel_loading_done()        
         animation_thread.join()  # Espera a que el hilo de animación termine
         print("Error no manejado: ", e)
+        
+def get_all_images_user(idUser):
+    url = SERVER_API_ENDPOINT + prefix_user+'/getImagesByUser?idUser='+idUser
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        imagenes_json = response_data.get('imagenes', [])
+        
+        # Convertir la lista de objetos JSON a objetos UserEntity
+        imagenes = [ImagenEntity.convertToImagen(image) for image in imagenes_json]
+        
+        return imagenes
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    return []
+
+def delete_image(idImage):
+    url = SERVER_API_ENDPOINT + prefix_user+f'/deleteImage?idImage={idImage}'
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        result = response_data.get('result')
+        msg = response_data.get('msg')
+
+        if MensajeResultados.success == result:
+            print(f'\nListo! {msg}')
+        else:
+            print(f'\nUps! {msg}')
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    return []

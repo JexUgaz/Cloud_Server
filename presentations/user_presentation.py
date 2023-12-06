@@ -4,7 +4,7 @@ from config.helpers import *
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
 from config.graphs import GraphHelper
-from services.connection_functions import add_new_image
+from services.connection_functions import add_new_image, delete_image, get_all_images_user
 listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
 
 _usuario_global=None
@@ -66,13 +66,11 @@ def agregarImagen():
 
 
 def listarImagenes():
-    imagenesNombres = ["cirros-image.img", "ubuntu-iso-20.04.iso"]
-    imagen_data = []
-    for i, imagen in enumerate(imagenesNombres, start=1):
-        imagen_data.append([i, imagen])
+    imagenesNombres = get_all_images_user(idUser=_usuario_global.id)
+    listas_images = [[index+1,imagen.nombre, imagen.path.split("/")[-1]] for index,imagen in enumerate(imagenesNombres)]
 
-    headers = ["N°", "Nombre de la imagen"]
-    table = tabulate.tabulate(imagen_data, headers, tablefmt="fancy_grid")
+    headers = ["N°", "Nombre","Archivo"]
+    table = tabulate.tabulate(listas_images, headers, tablefmt="fancy_grid")
     while True:
         clearScreen()
         setBarra(text="Lista de Imagenes",enter=True)
@@ -88,11 +86,12 @@ def listarImagenes():
                 clearScreen()
                 print(table)
                 try:
-                    indice=int(input("Indique el índice de la imagen que desea seleccionar (1-" + str(len(imagen_data)) + "), '0' para Cancelar: "))
+                    indice=int(input("Indique el índice de la imagen que desea seleccionar (1-" + str(len(listas_images)) + "), '0' para Cancelar: "))
                     if indice==0:
                         break
-                    if 1 <= indice and indice <= len(imagen_data):
-                        printWaiting(f"Ha seleccionado la imagen para borrar: {imagenesNombres[indice-1]}")
+                    if 1 <= indice and indice <= len(listas_images):
+                        delete_image(idImage=imagenesNombres[indice-1].id)
+                        printWaiting("")
                         break 
                     else:
                         printWaiting("Por favor, ingrese un número válido dentro del rango.")
