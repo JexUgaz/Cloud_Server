@@ -21,5 +21,9 @@ NEUTRON_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + NEUTRON_PORT + '/v2.0' # -
 NOVA_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + NOVA_PORT + '/v2.1' # ------------------ DONE
 GLANCE_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + GLANCE_PORT # ------------------ DONE
 DOMAIN_NAME = os.getenv("DOMAIN_NAME") # ------------------ DONE
+
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD= os.getenv("ADMIN_PASSWORD")
+ADMIN_PROJECT_NAME= os.getenv("ADMIN_PROJECT_NAME")
 # API SERVER ENDPOINT
 SERVER_API_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + SERVER_API_PORT # ------------------ DONE

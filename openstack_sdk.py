@@ -220,3 +220,20 @@ def create_instance(auth_endpoint, token, name, flavorRef, imageRef, network_lis
     r = requests.post(url=url, headers=headers, data=json.dumps(data))
     # status_code success = 202
     return r
+
+
+def monitorear_asignacion_servidores(auth_endpoint, token):
+    url = auth_endpoint + '/os-hypervisors/detail'
+    print(url)
+    print(token)
+    headers = {
+        'Content-type': 'application/json',
+        'X-Auth-Token': token,
+        #'X-OpenStack-Nova-API-Version': '2.1',
+        #"OpenStack-API-Version": "compute 2.1",
+        
+    }
+    
+    r = requests.get(url=url, headers=headers)
+    # status_code success = 200
+    return r

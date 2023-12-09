@@ -1,11 +1,12 @@
 import json
 import threading
 import requests
+from prettytable import PrettyTable
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
 from entities.ImageEntity import ImagenEntity
 from entities.UserEntity import UserEntity
-from openstack_sdk import password_authentication_with_unscoped_authorization
-from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, SERVER_API_ENDPOINT
+from openstack_sdk import password_authentication_with_unscoped_authorization,password_authentication_with_scoped_authorization,monitorear_asignacion_servidores
+from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, NOVA_ENDPOINT,SERVER_API_ENDPOINT,ADMIN_USERNAME,ADMIN_PASSWORD,ADMIN_PROJECT_NAME
 
 prefix_user='/user'
 def autenticar_usuario(username, password):
@@ -96,3 +97,61 @@ def delete_image(idImage):
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ", e)
     return []
+
+def monitorear_asignacion_recursos():
+    #is_autenthicated,user,user_token=autenticar_usuario(ADMIN_USERNAME,ADMIN_PASSWORD)
+    r1 = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, 'default', ADMIN_PROJECT_NAME)
+    user_token = r1.headers['X-Subject-Token']
+    #print(r1.status_code)
+    #'''
+    m=monitorear_asignacion_servidores(NOVA_ENDPOINT,user_token)
+
+    print(m.status_code)
+    if m.status_code == 200:
+        hyp_list=m.json()['hypervisors']
+        data=[]
+        for hyp in hyp_list:
+            data.append({
+                'hypervisor_hostname': hyp['hypervisor_hostname'],
+                'vcpus': hyp['vcpus'],
+                'memory_mb': hyp['memory_mb'],
+                'local_gb': hyp['local_gb'],
+                'vcpus_used': hyp['vcpus_used'],
+                'memory_mb_used': hyp['memory_mb_used'],
+                'local_gb_used': hyp['local_gb_used'],
+            })
+
+
+        #import json
+        #datos_json = json.dumps(datos)
+        
+        
+        #print(datos_json['hypervisors'])
+        #print(datos_json)
+        #
+        #print(json.dumps(datos))
+        #user_token = m.headers['X-Subject-Token']
+        #return True, username, user_token
+    #'''
+    
+    table = PrettyTable()
+    table.field_names = data[0].keys()
+    print ()
+    for row in data:
+        table.add_row(row.values())
+    
+    print(table)
+
+'''
+def crear_instancia(nombre_instancia, imagen_id, flavor_id,network_list=[]):
+    token = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, 'default', "ins")
+
+    r= create_instance(NOVA_ENDPOINT, token, nombre_instancia, flavor_id, imagen_id, network_list)
+
+    if r.status_code == 202:
+        print("creacion de instancia exitosa")
+        print(r.json())
+    else:
+        print(f"Error en la solicitud: {r.status_code}")
+        print(r.text)
+'''

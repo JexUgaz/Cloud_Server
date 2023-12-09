@@ -1,8 +1,12 @@
 import inquirer
+import msvcrt
 import tabulate
+import paramiko
 from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell, setTitle
 from entities.UserEntity import UserEntity
 from services.admin_services import get_all_users
+from services.connection_functions import monitorear_asignacion_recursos
+from services.usor_real_recursos import monitorear_uso_recursos
 
 def AgregarUsuario():
     print("Ha selecionado la opción de: Agregar Usuario")
@@ -21,7 +25,8 @@ def showMenuAdministrador(user:UserEntity):
             "Imagenes",
             "Slices",
             "Alertas",
-            "Monitoreo - Listar recursos",
+            "Monitoreo - Asignacion de recursos",
+            "Monitoreo - Uso de recursos",
             "Cerrar Sesión"
         ]
         seleccion = setListOptionsShell(
@@ -40,6 +45,13 @@ def showMenuAdministrador(user:UserEntity):
         elif seleccion==choices[3]:
             AdministradorAlertas()
         elif seleccion==choices[4]:
+            monitorear_asignacion_recursos()
+            print("\nPresione una tecla para continuar...")
+            msvcrt.getch()
+        elif seleccion==choices[5]:
+            monitorear_uso_recursos()
+
+        elif seleccion==choices[6]:
             printWaiting(f"Selección: {seleccion}")
 
 def AdministradorUsuarios():
