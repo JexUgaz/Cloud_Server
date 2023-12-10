@@ -1,12 +1,10 @@
-import inquirer
 import msvcrt
 import tabulate
-import paramiko
+from prettytable import PrettyTable
 from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell, setTitle
 from entities.UserEntity import UserEntity
-from services.admin_services import get_all_users
+from services.admin_services import get_all_users, get_monitoreo_recursos
 from services.connection_functions import monitorear_asignacion_recursos
-from services.usor_real_recursos import monitorear_uso_recursos
 
 def AgregarUsuario():
     print("Ha selecionado la opción de: Agregar Usuario")
@@ -50,9 +48,27 @@ def showMenuAdministrador(user:UserEntity):
             msvcrt.getch()
         elif seleccion==choices[5]:
             monitorear_uso_recursos()
-
         elif seleccion==choices[6]:
             printWaiting(f"Selección: {seleccion}")
+
+def monitorear_uso_recursos():
+    memoria_workers,uso_sistema_workers=get_monitoreo_recursos()
+    clearScreen()
+    setBarra(text="TABLA DE MONITOREO DE RECURSOS",enter=True)
+    # Tabla consolidada para la memoria de cada worker
+    tabla_memoria_consolidada = PrettyTable()
+    tabla_memoria_consolidada.field_names = ["Worker", "Memoria Total (KB)", "Memoria Usada (KB)", "Memoria Libre (KB)"]
+
+    # Tabla consolidada para el uso del sistema de cada worker
+    tabla_uso_sistema_consolidado = PrettyTable()
+    tabla_uso_sistema_consolidado.field_names = ["Worker", "Porcentaje Sistema Usado", "Porcentaje Sistema No Usado", "Cores Usados", "Tiempo de Espera"]
+    
+    for memoria in memoria_workers:
+        tabla_memoria_consolidada.add_row(memoria)
+    for uso_sistema in uso_sistema_workers:
+        tabla_uso_sistema_consolidado.add_row(uso_sistema)
+    print(tabla_memoria_consolidada)
+    printWaiting(tabla_uso_sistema_consolidado)
 
 def AdministradorUsuarios():
     while True:
