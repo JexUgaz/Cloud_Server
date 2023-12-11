@@ -1,7 +1,42 @@
 import json, requests
 
 # KEYSTONE API
-def password_authentication_with_scoped_authorization(auth_endpoint, user_domain_name, username, password, project_domain_id, project_name):
+def password_authentication_with_scoped_authorization(auth_endpoint, user_id, password, domain_id, project_id):
+    url = auth_endpoint + '/auth/tokens'
+
+    data = \
+        {
+            "auth": {
+                "identity": {
+                    "methods": [
+                        "password"
+                    ],
+                    "password": {
+                        "user": {
+                            "id": user_id,
+                            "domain": {
+                                "id": domain_id
+                            },
+                            "password": password
+                        }
+                    }
+                },
+                "scope": {
+                    "project": {
+                        "domain": {
+                            "id": domain_id
+                        },
+                        "id": project_id
+                    }
+                }
+            }
+        }
+        
+    r = requests.post(url=url, data=json.dumps(data))
+    # status_code success = 201
+    return r
+
+def password_authentication_with_scoped_authorization_va(auth_endpoint, user_domain_name, username, password, project_domain_id, project_name):
     url = auth_endpoint + '/auth/tokens'
 
     data = \
@@ -36,7 +71,7 @@ def password_authentication_with_scoped_authorization(auth_endpoint, user_domain
     # status_code success = 201
     return r
 
-def password_authentication_with_unscoped_authorization(auth_endpoint, user_domain_name, username, password):
+def password_authentication_with_unscoped_authorization(auth_endpoint, domain_id, username, password):
     url = auth_endpoint + '/auth/tokens'    
 
     data = \
@@ -50,7 +85,7 @@ def password_authentication_with_unscoped_authorization(auth_endpoint, user_doma
                         "user": {
                             "name": username,
                             "domain": {
-                                "name": user_domain_name
+                                "id": domain_id
                             },
                             "password": password
                         }
@@ -65,7 +100,23 @@ def password_authentication_with_unscoped_authorization(auth_endpoint, user_doma
         r=None
     return r
 
-def token_authentication_with_scoped_authorization(auth_endpoint, token, project_domain_id, project_name):
+def monitorear_asignacion_servidores(auth_endpoint, token):
+    url = auth_endpoint + '/os-hypervisors/detail'
+    print(url)
+    print(token)
+    headers = {
+        'Content-type': 'application/json',
+        'X-Auth-Token': token,
+        #'X-OpenStack-Nova-API-Version': '2.1',
+        #"OpenStack-API-Version": "compute 2.1",
+        
+    }
+    
+    r = requests.get(url=url, headers=headers)
+    # status_code success = 200
+    return r
+
+def token_authentication_with_scoped_authorization(auth_endpoint, token, domain_id, project_id):
     url = auth_endpoint + '/auth/tokens'
 
     data = \
@@ -82,9 +133,9 @@ def token_authentication_with_scoped_authorization(auth_endpoint, token, project
                 "scope": {
                     "project": {
                         "domain": {
-                            "id": project_domain_id
+                            "id": domain_id
                         },
-                        "name": project_name
+                        "id": project_id
                     }
                 }
             }
@@ -92,6 +143,14 @@ def token_authentication_with_scoped_authorization(auth_endpoint, token, project
 
     r = requests.post(url=url, data=json.dumps(data))
     # status_code success = 201
+    return r
+
+def assign_role_to_user_on_project(auth_endpoint, token, project_id, user_id, role_id):
+    url = auth_endpoint + '/projects/' + project_id + '/users/' + user_id + '/roles/' + role_id
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.put(url=url, headers=headers)
+    # status_code success = 204
     return r
 
 def create_project(auth_endpoint, token, domain_id, project_name, project_description):
@@ -112,8 +171,15 @@ def create_project(auth_endpoint, token, domain_id, project_name, project_descri
     # status_code success = 201
     return r
 
+def list_projects(auth_endpoint, token, user_id):
+    
+    url = auth_endpoint + '/users/' + user_id + '/projects'
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.get(url=url, headers=headers)
+    return r
+
 # NEUTRON API
-#def create_network(auth_endpoint, token, name, network_type=None, segmentation_id=None):
 def create_network(auth_endpoint, token, name):
     url = auth_endpoint + '/networks'
     data = \
@@ -123,22 +189,13 @@ def create_network(auth_endpoint, token, name):
                 "port_security_enabled": "false",
             }
         }
-
-    '''
-    if network_type is not None:
-        data['network']["provider:network_type"] = network_type
-
-    if segmentation_id is not None:
-        data["network"]["provider:segment"] = segmentation_id
-    '''
-    
+        
     headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
     r = requests.post(url=url, headers=headers, data=json.dumps(data))
     # status_code success = 201
     return r
 
 def create_subnet(auth_endpoint, token, network_id, name, ip_version, cidr):
-        
     url = auth_endpoint + '/subnets'
     data = \
         {
@@ -160,7 +217,6 @@ def create_subnet(auth_endpoint, token, network_id, name, ip_version, cidr):
     return r
 
 def create_port(auth_endpoint, token, name, network_id, project_id):
-        
     url = auth_endpoint + '/ports'
     headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
 
@@ -178,62 +234,62 @@ def create_port(auth_endpoint, token, name, network_id, project_id):
     # status_code success = 201
     return r
 
-# NOVA API
-#def create_instance(auth_endpoint, token, name, flavorRef, imageRef=None, availability_zone=None, network_list=None, compute_version=None):
-def create_instance(auth_endpoint, token, name, flavorRef, imageRef, network_list):
-    url = auth_endpoint + '/servers'
+
+def get_server_console(nova_endpoint, token, server_id, compute_api_version):
+    url = nova_endpoint + '/servers/' + server_id + '/remote-consoles'
+    headers = {
+        'Content-type': 'application/json',
+        'X-Auth-Token': token,
+        "OpenStack-API-Version": "compute " + compute_api_version
+    }
+    
+    data = \
+        {
+            "remote_console": {
+                "protocol": "vnc",
+                "type": "novnc"
+                }
+        }
+    
+    r = requests.post(url=url, headers=headers, data=json.dumps(data))
+    # status_code success = 200
+    return r
+
+def create_server(nova_endpoint, token, name, flavor_id, image_id, networks=None):
+    url = nova_endpoint + '/servers'
     headers = {
         'Content-type': 'application/json',
         'X-Auth-Token': token,
     }
-    '''
-    if compute_version is not None:
-        headers['OpenStack-API-Version'] = 'compute ' + compute_version
-    '''
     
     data = \
         {
             'server': {
                 'name': name,
-                'flavorRef': flavorRef,
-                'imageRef': imageRef,
-                #'availability_zone': availability_zone,
-                'networks': network_list,
-                
+                'flavorRef': flavor_id,
+                'imageRef': image_id,
+                'networks': networks,
             }
         }
-
-    '''
-    if imageRef is not None:
-        data['server']['imageRef'] = imageRef
-
-    if availability_zone is not None:
-        data['server']['availability_zone'] = availability_zone
-
-    if network_list is not None:
-        data['server']['networks'] = network_list
-
-    if volume_list is not None:
-        data['server']['block_device_mapping'] = volume_list
-    '''
     
     r = requests.post(url=url, headers=headers, data=json.dumps(data))
     # status_code success = 202
     return r
 
-
-def monitorear_asignacion_servidores(auth_endpoint, token):
-    url = auth_endpoint + '/os-hypervisors/detail'
-    print(url)
-    print(token)
-    headers = {
-        'Content-type': 'application/json',
-        'X-Auth-Token': token,
-        #'X-OpenStack-Nova-API-Version': '2.1',
-        #"OpenStack-API-Version": "compute 2.1",
-        
-    }
-    
+def list_flavors(nova_endpoint, token):
+    url = nova_endpoint + '/flavors/detail'
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
     r = requests.get(url=url, headers=headers)
     # status_code success = 200
+    return r
+
+def list_images(auth_endpoint, token, limit=None):
+    url = auth_endpoint + '/images'
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    if limit is not None:
+        params = {'limit': limit}
+        r = requests.get(url=url, headers=headers, params=params)
+    else:
+        r = requests.get(url=url, headers=headers)
     return r
