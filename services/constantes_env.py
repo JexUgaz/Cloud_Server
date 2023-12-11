@@ -27,3 +27,10 @@ ADMIN_PASSWORD= os.getenv("ADMIN_PASSWORD")
 ADMIN_PROJECT_NAME= os.getenv("ADMIN_PROJECT_NAME")
 # API SERVER ENDPOINT
 SERVER_API_ENDPOINT = 'http://' + ACCESS_NODE_IP + ':' + SERVER_API_PORT # ------------------ DONE
+
+
+
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID") # ------------------ DONE
+ADMIN_USER_PASSWORD = os.getenv("ADMIN_USER_PASSWORD") # ------------------ DONE
+DOMAIN_ID = os.getenv("DOMAIN_ID") # ------------------ DONE
+ADMIN_PROJECT_ID = os.getenv("ADMIN_PROJECT_ID") # ------------------ DONE

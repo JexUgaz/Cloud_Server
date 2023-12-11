@@ -8,11 +8,11 @@ from config.helpers import MensajeResultados, cancel_loading_done, loading_anima
 from entities.ImageEntity import ImagenEntity
 from entities.UserEntity import UserEntity
 from openstack_sdk import password_authentication_with_unscoped_authorization,password_authentication_with_scoped_authorization,monitorear_asignacion_servidores
-from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, NOVA_ENDPOINT,SERVER_API_ENDPOINT,ADMIN_USERNAME,ADMIN_PASSWORD,ADMIN_PROJECT_NAME
+from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, NOVA_ENDPOINT,SERVER_API_ENDPOINT,ADMIN_USERNAME,ADMIN_PASSWORD,ADMIN_PROJECT_NAME, ADMIN_USER_ID, ADMIN_USER_PASSWORD, DOMAIN_ID, ADMIN_PROJECT_ID
 
 prefix_user='/user'
 def autenticar_usuario(username, password):
-    r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, username, password)
+    r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_ID, username, password)
     if r is not None:
         if r.status_code == 201:
             user_token = r.headers['X-Subject-Token']
@@ -78,19 +78,23 @@ def add_new_slice(slice:SliceEntity):
         response_data = json.loads(r.text)
 
         result = response_data.get('result')
-        msg = response_data.get('msg') 
+        msg = response_data.get('msg')
+
+        cancel_loading_done()  
+        animation_thread.join()  
 
         if MensajeResultados.success == result:
             print(f'\nListo! {msg}')
         else:
             print(f'\nUps! {msg}')
     except requests.exceptions.RequestException as e:
+        cancel_loading_done()      
+        animation_thread.join()  # Espera a que el hilo de animación termine
         print("Error en la solicitud: ", e)
     except Exception as e:
+        cancel_loading_done()        
+        animation_thread.join()  # Espera a que el hilo de animación termine
         print("Error no manejado: ", e)
-    finally:
-        cancel_loading_done()  
-        animation_thread.join() 
         
 def get_all_images_user(idUser):
     url = SERVER_API_ENDPOINT + prefix_user+'/getImagesByUser?idUser='+idUser
@@ -103,7 +107,7 @@ def get_all_images_user(idUser):
         
         # Convertir la lista de objetos JSON a objetos UserEntity
         imagenes = [ImagenEntity.convertToImagen(image) for image in imagenes_json]
-
+        
         return imagenes
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ", e)
@@ -135,8 +139,6 @@ def get_all_topologias():
 def delete_image(idImage):
     url = SERVER_API_ENDPOINT + prefix_user+f'/deleteImage?idImage={idImage}'
     try:
-        animation_thread = threading.Thread(target=loading_animation)
-        animation_thread.start()
         r = requests.get(url=url)
         response_data = json.loads(r.text)
         result = response_data.get('result')
@@ -148,14 +150,12 @@ def delete_image(idImage):
             print(f'\nUps! {msg}')
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ", e)
-    finally:
-        cancel_loading_done()  
-        animation_thread.join()  
     return []
 
 def monitorear_asignacion_recursos():
     #is_autenthicated,user,user_token=autenticar_usuario(ADMIN_USERNAME,ADMIN_PASSWORD)
-    r1 = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, 'default', ADMIN_PROJECT_NAME)
+    #r11 = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, 'default', ADMIN_PROJECT_NAME)
+    r1 = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, ADMIN_USER_ID, ADMIN_USER_PASSWORD, DOMAIN_ID, ADMIN_PROJECT_ID)
     user_token = r1.headers['X-Subject-Token']
     #print(r1.status_code)
     #'''
