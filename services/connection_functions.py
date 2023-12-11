@@ -1,6 +1,8 @@
 import json
 import threading
 import requests
+from entities.SliceEntity import SliceEntity
+from entities.TopologiaEntity import TopologiaEntity
 from prettytable import PrettyTable
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
 from entities.ImageEntity import ImagenEntity
@@ -62,6 +64,33 @@ def add_new_image(link, idUser, nombre):
     finally:
         cancel_loading_done()  
         animation_thread.join() 
+
+
+def add_new_slice(slice:SliceEntity):
+    animation_thread = threading.Thread(target=loading_animation)
+    animation_thread.start()
+    
+    url = SERVER_API_ENDPOINT + prefix_user + '/setNewSlice'
+    data = slice.toJSON()
+
+    try:
+        r = requests.post(url=url, data=data, stream=True)
+        response_data = json.loads(r.text)
+
+        result = response_data.get('result')
+        msg = response_data.get('msg') 
+
+        if MensajeResultados.success == result:
+            print(f'\nListo! {msg}')
+        else:
+            print(f'\nUps! {msg}')
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    except Exception as e:
+        print("Error no manejado: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
         
 def get_all_images_user(idUser):
     url = SERVER_API_ENDPOINT + prefix_user+'/getImagesByUser?idUser='+idUser
@@ -76,6 +105,26 @@ def get_all_images_user(idUser):
         imagenes = [ImagenEntity.convertToImagen(image) for image in imagenes_json]
 
         return imagenes
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join()  
+    return []
+
+def get_all_topologias():
+    url = SERVER_API_ENDPOINT + prefix_user+'/getAllTopologias'
+    try:
+        animation_thread = threading.Thread(target=loading_animation)
+        animation_thread.start()
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        topologias_json = response_data.get('topologias', [])
+        
+        # Convertir la lista de objetos JSON a objetos UserEntity
+        topologias = [TopologiaEntity.convertToTopologia(topologia) for topologia in topologias_json]
+
+        return topologias
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ", e)
     finally:

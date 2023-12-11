@@ -1,11 +1,11 @@
-from ast import Slice
 import tabulate
 from config.globals import RolesGlobal
 from config.helpers import *
+from entities.SliceEntity import SliceEntity
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
 from config.graphs import GraphHelper
-from services.connection_functions import add_new_image, delete_image, get_all_images_user
+from services.connection_functions import add_new_image, add_new_slice, delete_image, get_all_images_user, get_all_topologias
 listTopologias=["Arbol","Anillo","Cancelar"]
 
 _usuario_global=None
@@ -137,6 +137,11 @@ def imagenes():
             break
 
 def crearSlice():
+    imagenes=get_all_images_user(idUser=_usuario_global.id)
+    clearScreen()
+    if len(imagenes)==0:
+        printWaiting("No posee imágenes para crear un Slice\nPorfavor, agregue una imagen primero.")
+        return
     clearScreen()
     setTitle(title="CREAR SLICE")
     nombreSlice=input("Indique el nombre de su slice: ")
@@ -155,15 +160,18 @@ def crearSlice():
             if(cantidad>=2 and cantidad<=5):
                 print("")
                 topologiaSelected,listVM=listarTopologias(cant_vm=cantidad)
+                if topologiaSelected is None or listVM is None:
+                    printWaiting("Inválido")
+                    return
                 clearScreen()
-                slice=Slice(id_vlan=None,nombre=nombreSlice,vms=listVM,nombre_dhcp='',topologia=topologiaSelected,infraestructura=None,fecha_creacion=None,usuario_id=None,subred=None)
+                slice=SliceEntity(id_vlan=None,nombre=nombreSlice,vms=listVM,nombre_dhcp='',topologia=topologiaSelected,infraestructura=None,fecha_creacion=None,usuario_id=_usuario_global.id,subred=None)
                 detallesCreacionExitosa(slice)
             else:
                 printWaiting("Cantidad de VMs inválida.")
     except ValueError:
         printWaiting("Por favor, ingrese un número válido.")
 
-def detallesCreacionExitosa(slice:Slice):
+def detallesCreacionExitosa(slice:SliceEntity):
     setTitle(title="Creación Exitosa")
     print()
     setBarra(text="Slice",enter=True)
@@ -182,6 +190,8 @@ def detallesCreacionExitosa(slice:Slice):
         filename=GraphHelper.drawArbol(slice.vms)
     elif slice.topologia==listTopologias[1]:
         filename=GraphHelper.drawAnillo(slice.vms)
+    
+    add_new_slice(slice=slice)
     printWaiting("")
     try:
         os.remove(filename)
@@ -190,25 +200,25 @@ def detallesCreacionExitosa(slice:Slice):
 
 def listarTopologias(cant_vm):
     setBarra(text=f"Topologías para {cant_vm} VMs",enter=True)
+    topologias =get_all_topologias()
+    
+    listTopologias=[topologia.nombre for topologia in topologias]
+    listTopologias.append("Cancelar")
     topologiaSelected=setListOptionsShell(
         message="Seleccione la topología",
         choices=listTopologias
     )
     if(listTopologias[-1]!=topologiaSelected):
-        """ubicaciones=[]
-        idUser=1 # ID del usuario, se guarda al loguearse
-        n_Vms=4 #N° de VMs a crear (por defecto), debe ingresar el usuario
-        size_ram= [100,100,100,100] #100Mbytes,100Mbytes,100Mbytes,100Mbytes RAM de cada VMs (Debe ingresar)
-        idTopologia=1 # ID de la Topolía (por defecto: Arbol, por ahora)
-        """
         listVM=[]
         for i in range(cant_vm):
             print()
             salir,virtualMachine=setDetailsVM(i)
             if salir:
-                break
+                return None,None
             listVM.append(virtualMachine)
-        return topologiaSelected,listVM
+        topologia = [topologia for topologia in topologias if topologia.nombre == topologiaSelected]
+
+        return topologia,listVM
     else:
         printWaiting("CREACIÓN CANCELADA...")
         return None,None
@@ -221,10 +231,10 @@ def setDetailsVM(i):
         printWaiting("Debe ingresar un nombre...CREACIÓN CANCELADA")
         return
     print("")
-    images=["cirros-image.img", "ubuntu-iso-20.04.iso","Cancelar"]
+    images=get_all_images_user(idUser=_usuario_global.id)
     imagenSelected=setListOptionsShell(
         message="Indique la imagen: ",
-        choices=images
+        choices=[image.nombre for image in images]
     )
     if(images[-1]==imagenSelected):
         return True,None
@@ -235,7 +245,8 @@ def setDetailsVM(i):
         memoria=float(input("Indique la memoria RAM de la VM: "))
         if (memoria>=100 and memoria<=200):
             print(f"Se creará la VM #{i+1} con la imagen {imagenSelected} y memoria RAM de {memoria}MB")
-            return False,VirtualMachine(id=None,nombre=nombreVM,sizeRam=memoria,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagenSelected)
+            imagen = [image for image in images if image.nombre == imagenSelected]
+            return False,VirtualMachine(id=None,nombre=nombreVM,sizeRam=memoria,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagen)
         else:
             printWaiting("Valor fuera del rango establecido...CREACIÓN CANCELADA")
     except ValueError:
