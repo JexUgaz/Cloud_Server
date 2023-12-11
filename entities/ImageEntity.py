@@ -22,5 +22,8 @@ class ImagenEntity:
             usuario_id=json['usuario_id']
         )
     
+    def to_list(self):
+        return [self.id,self.nombre,self.usuario_id]
+    
     def __str__(self):
         return f"Imagen(id={self.id}, path={self.path}, nombre={self.nombre}, usuario_id={self.usuario_id})"

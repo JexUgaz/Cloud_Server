@@ -1,5 +1,6 @@
 from ast import Slice
 import tabulate
+from config.globals import RolesGlobal
 from config.helpers import *
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
@@ -12,23 +13,25 @@ _usuario_global=None
 def showMenuUser(user:UserEntity):
     global _usuario_global
     _usuario_global=user
-    salir=False
-    while not salir:
+    choices=[]
+    if user.roles_id==RolesGlobal.usuario:
+        choices=["Linux","Openstack","Cerrar Sesión"]
+    if user.roles_id==RolesGlobal.administrador:
+        choices=["Linux","Openstack","Salir"]
+    while True:
         clearScreen()
         setBarra(text=f"Bienvenido, {user.nombre}!",enter=True)
         seleccion = setListOptionsShell(
             message="Seleccione la plataforma",
-            choices=["Linux","Openstack","Cerrar Sesión"]
+            choices=choices
         ) 
-        
-        if seleccion == "Cerrar Sesión":
-            print("Cerrando sesión...")
-            salir=True
+        if seleccion == choices[len(choices)-1]:
+            break
         else:
-            menu(api=seleccion)
+            menuUsuario(api=seleccion)
 
 
-def menu(api):
+def menuUsuario(api):
     clearScreen()
     if(api=="Openstack"):
         printWaiting("En Construcción...")
@@ -60,52 +63,67 @@ def agregarImagen():
     clearScreen()
     setBarra(text="Agregar Imagen",enter=True)
     nombre = input("Nombre de la imagen: ")
+    
+    if(len(nombre)==0):
+        printWaiting("Incorrecto!")
+        return
+    
     link = input("Indique URL de descarga: ")
+
+    if(len(link)==0 or not es_URI(link)):
+        printWaiting("Incorrecto!")
+        return
+
     add_new_image(link=link,nombre=nombre,idUser=_usuario_global.id)
     printWaiting("")
 
 
 def listarImagenes():
-    imagenesNombres = get_all_images_user(idUser=_usuario_global.id)
-    listas_images = [[index+1,imagen.nombre, imagen.path.split("/")[-1]] for index,imagen in enumerate(imagenesNombres)]
-
-    headers = ["N°", "Nombre","Archivo"]
-    table = tabulate.tabulate(listas_images, headers, tablefmt="fancy_grid")
+    clearScreen()
     while True:
+        imagenesNombres = get_all_images_user(idUser=_usuario_global.id)
         clearScreen()
+        listas_images = [[index+1,imagen.nombre, imagen.path.split("/")[-1]] for index,imagen in enumerate(imagenesNombres)]
+
+        headers = ["N°", "Nombre","Archivo"]
+        table = tabulate.tabulate(listas_images, headers, tablefmt="fancy_grid")
         setBarra(text="Lista de Imagenes",enter=True)
-        print(table)
-        
-        choices=["Volver","Borrar una Imagen"]
-        selection=setListOptionsShell(
-            message="Seleccione: ",
-            choices=choices
-        )
-        if selection==choices[1]:
-            while True:
-                clearScreen()
-                print(table)
-                try:
-                    indice=int(input("Indique el índice de la imagen que desea seleccionar (1-" + str(len(listas_images)) + "), '0' para Cancelar: "))
-                    if indice==0:
-                        break
-                    if 1 <= indice and indice <= len(listas_images):
-                        delete_image(idImage=imagenesNombres[indice-1].id)
-                        printWaiting("")
-                        break 
-                    else:
-                        printWaiting("Por favor, ingrese un número válido dentro del rango.")
-                    
-                except ValueError:
-                    printWaiting("Por favor, ingrese un número válido.")
-        else:
+        if(len(listas_images)==0):
+            printWaiting("Tiene 0 imágenes, porfavor añada una")
             break
+        else:
+            print(table)
+        
+            choices=["Volver","Borrar una Imagen"]
+            selection=setListOptionsShell(
+                message="Seleccione: ",
+                choices=choices
+            )
+            if selection==choices[1]:
+                while True:
+                    clearScreen()
+                    print(table)
+                    try:
+                        indice=int(input("Indique el índice de la imagen que desea seleccionar (1-" + str(len(listas_images)) + "), '0' para Cancelar: "))
+                        if indice==0:
+                            break
+                        if 1 <= indice and indice <= len(listas_images):
+                            delete_image(idImage=imagenesNombres[indice-1].id)
+                            printWaiting("")
+                            break 
+                        else:
+                            printWaiting("Por favor, ingrese un número válido dentro del rango.")
+                        
+                    except ValueError:
+                        printWaiting("Por favor, ingrese un número válido.")
+            else:
+                break
 
 def imagenes():
     while True:
         clearScreen()
         setBarra(text="Imágenes",enter=True)
-        choices=["Ver mis imágenes","Agregar imagen","Eliminar Imagen","Volver"]
+        choices=["Ver mis imágenes","Agregar imagen","Volver"]
         seleccion = setListOptionsShell(
             message="Seleccione entre las opciones ",
             choices=choices

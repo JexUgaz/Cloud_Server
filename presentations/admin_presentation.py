@@ -1,24 +1,22 @@
-import msvcrt
 import tabulate
+from config.globals import RolesGlobal
+from presentations.user_presentation import showMenuUser
 from prettytable import PrettyTable
 from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell, setTitle
 from entities.UserEntity import UserEntity
-from services.admin_services import get_all_users, get_monitoreo_recursos
+from services.admin_services import get_all_images, get_all_users, get_monitoreo_recursos, set_new_user
 from services.connection_functions import monitorear_asignacion_recursos
 
-def AgregarUsuario():
-    print("Ha selecionado la opción de: Agregar Usuario")
-    # Capturar datos del usuario
-    nombre = input("Ingrese el nombre del usuario: ")
-    correo = input("Ingrese su correo: ")
-    codigo_pucp = input("Ingrese su codigo PUCP: ")
-    contraseña = input("Ingrese su contraseña: ")
+_usuario_global=None
 
 def showMenuAdministrador(user:UserEntity):
+    global _usuario_global
+    _usuario_global=user
     while True:
         clearScreen()
         setBarra(text=f"Bienvenido Administrador, {user.nombre}!",enter=True)
         choices=[
+            "Ingresar como usuario",
             "Usuarios",
             "Imagenes",
             "Slices",
@@ -34,22 +32,21 @@ def showMenuAdministrador(user:UserEntity):
         
         if seleccion == choices[len(choices)-1]:
             break
-        elif seleccion==choices[0]:
-            AdministradorUsuarios()
         elif seleccion==choices[1]:
-            AdministradorImagenes()
+            AdministradorUsuarios()
         elif seleccion==choices[2]:
-            AdministradorSlices()
+            AdministradorImagenes()
         elif seleccion==choices[3]:
-            AdministradorAlertas()
+            AdministradorSlices()
         elif seleccion==choices[4]:
+            AdministradorAlertas()
+        elif seleccion==choices[5]:
             monitorear_asignacion_recursos()
             print("\nPresione una tecla para continuar...")
-            msvcrt.getch()
-        elif seleccion==choices[5]:
-            monitorear_uso_recursos()
         elif seleccion==choices[6]:
-            printWaiting(f"Selección: {seleccion}")
+            monitorear_uso_recursos()
+        elif seleccion==choices[0]:
+            showMenuUser(user=user)
 
 def monitorear_uso_recursos():
     memoria_workers,uso_sistema_workers=get_monitoreo_recursos()
@@ -77,7 +74,6 @@ def AdministradorUsuarios():
         choices=[
                 "Listar Usuarios",
                 "Agregar Usuario",
-                "Bloquear Usuario",
                 "Volver"
         ]
         seleccion=setListOptionsShell(
@@ -88,30 +84,43 @@ def AdministradorUsuarios():
         if seleccion == choices[len(choices)-1]:
             break
         elif seleccion==choices[0]:
-            clearScreen()
-            setTitle("Lista de Usuarios")
-            usuarios=get_all_users()
-            listas_usuarios = [usuario.to_list() for usuario in usuarios]
-            headers=["id","nombre","email"]
-            printWaiting(tabulate.tabulate(listas_usuarios, headers, tablefmt="fancy_grid"))
+            listarUsuariosAdmin()
+        elif seleccion==choices[1]:
+            addUsuariosAdmin()
 
+def addUsuariosAdmin():
+    clearScreen()
+    setTitle("Agregar Usuarios")
+    nombre=input("Ingrese el nombre del nuevo usuario: ")
+    if(len(nombre)==0):
+        printWaiting("Incorrecto!")
+        return
+    
+    email= input("Ingrese el email del nuevo usuario: ")
+    if(len(email)==0):
+        printWaiting("Incorrecto!")
+        return
+    set_new_user(name=nombre,email=email,rol=RolesGlobal.usuario)
+    printWaiting("")
+
+def listarUsuariosAdmin():
+    clearScreen()
+    usuarios=get_all_users()
+    clearScreen()
+    setTitle("Lista de Usuarios")
+    listas_usuarios = [usuario.to_list() for usuario in usuarios]
+    headers=["ID","Nombre","Email"]
+    printWaiting(tabulate.tabulate(listas_usuarios, headers, tablefmt="fancy_grid"))
 
 def AdministradorImagenes():
-    while True:
-        clearScreen()
-        setBarra(text="Opciones sobre las imágenes",enter=True)
-        choices=[
-                "Listar imagenes",
-                "Agregar imagenes",
-                "Eliminar imagenes",
-                "Volver"
-        ]
-        seleccion=setListOptionsShell(
-            message="Opción",
-            choices=choices
-        )
-        if seleccion == choices[len(choices)-1]:
-            break
+    clearScreen()
+    images=get_all_images()
+    clearScreen()
+    setTitle("Lista de Todas las Imágenes")
+    listas_images = [image.to_list() for image in images]
+    headers=["ID","Nombre","Propietario"]
+    printWaiting(tabulate.tabulate(listas_images, headers, tablefmt="fancy_grid"))
+
 
 def AdministradorSlices():
     while True:

@@ -1,6 +1,7 @@
 ###########  Acciones  ###############
 import os
 import platform
+from urllib.parse import urlparse
 import inquirer
 import time
 import sys
@@ -75,3 +76,10 @@ def loading_animation():
 def cancel_loading_done():
     global done
     done=True
+
+def es_URI(cadena):
+    try:
+        resultado = urlparse(cadena)
+        return all([resultado.scheme, resultado.netloc])
+    except ValueError:
+        return False
