@@ -3,7 +3,7 @@ import threading
 import requests
 from entities.SliceEntity import SliceEntity
 from entities.TopologiaEntity import TopologiaEntity
-from prettytable import PrettyTable
+from prettyTable import PrettyTable
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
 from entities.ImageEntity import ImagenEntity
 from entities.UserEntity import UserEntity
@@ -12,6 +12,7 @@ from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, NOVA_ENDPOIN
 
 prefix_user='/user'
 def autenticar_usuario(username, password):
+    print(f"{username} {password}")
     r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_ID, username, password)
     if r is not None:
         if r.status_code == 201:
