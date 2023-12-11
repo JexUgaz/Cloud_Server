@@ -4,7 +4,7 @@ from presentations.user_presentation import showMenuUser
 from prettytable import PrettyTable
 from config.helpers import clearScreen, printWaiting, setBarra, setListOptionsShell, setTitle
 from entities.UserEntity import UserEntity
-from services.admin_services import get_all_images, get_all_users, get_monitoreo_recursos, set_new_user
+from services.admin_services import get_all_images, get_all_subredes, get_all_users, get_monitoreo_recursos, set_new_subredes, set_new_user
 from services.connection_functions import monitorear_asignacion_recursos
 
 _usuario_global=None
@@ -21,6 +21,7 @@ def showMenuAdministrador(user:UserEntity):
             "Imagenes",
             "Slices",
             "Alertas",
+            "Subredes",
             "Monitoreo - Asignacion de recursos",
             "Monitoreo - Uso de recursos",
             "Cerrar Sesión"
@@ -41,9 +42,11 @@ def showMenuAdministrador(user:UserEntity):
         elif seleccion==choices[4]:
             AdministradorAlertas()
         elif seleccion==choices[5]:
+            AdministradorSubredes()
+        elif seleccion==choices[6]:
             monitorear_asignacion_recursos()
             print("\nPresione una tecla para continuar...")
-        elif seleccion==choices[6]:
+        elif seleccion==choices[7]:
             monitorear_uso_recursos()
         elif seleccion==choices[0]:
             showMenuUser(user=user)
@@ -66,6 +69,44 @@ def monitorear_uso_recursos():
         tabla_uso_sistema_consolidado.add_row(uso_sistema)
     print(tabla_memoria_consolidada)
     printWaiting(tabla_uso_sistema_consolidado)
+
+def AdministradorSubredes():
+    while True:
+        clearScreen()
+        setBarra(text="Opciones sobre las subredes",enter=True)
+        choices=[
+                "Añadir Subredes",
+                "Listar Subredes",
+                "Volver"
+        ]
+        seleccion=setListOptionsShell(
+            message="Opción",
+            choices=choices
+        )
+        
+        if seleccion == choices[len(choices)-1]:
+            break
+        elif seleccion==choices[0]:
+            anadirSubredesAdmin()
+        elif seleccion==choices[1]:
+            listarSubredesAdmin()
+
+def anadirSubredesAdmin():
+    result=input("¿Seguro de que quiere añadir más subredes? (Y/N): ")
+    if result.lower()=="y":
+        clearScreen()
+        setTitle("Añadiendo nuevas subredes")
+        set_new_subredes()
+        printWaiting("Se añadieron más subredes exitosamente!")
+
+def listarSubredesAdmin():
+    clearScreen()
+    setTitle("Todas las subredes")
+    subredes=get_all_subredes()
+    listas_subredes = [[subred[0],subred[1],subred[2]] for subred in subredes]
+    headers=["ID","Dirección","Activo"]
+    printWaiting(tabulate.tabulate(listas_subredes, headers, tablefmt="fancy_grid"))
+
 
 def AdministradorUsuarios():
     while True:

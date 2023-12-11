@@ -47,6 +47,45 @@ def get_all_images():
         animation_thread.join() 
     return []
 
+def get_all_subredes():
+    animation_thread = threading.Thread(target=loading_animation)
+    animation_thread.start()
+    url = SERVER_API_ENDPOINT + prefix_admin+'/listSubredes'
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        subredes_json = response_data.get('subredes', [])
+        
+        return subredes_json
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
+    return []
+
+
+def set_new_subredes():
+    animation_thread = threading.Thread(target=loading_animation)
+    animation_thread.start()
+    url = SERVER_API_ENDPOINT + prefix_admin+'/addNewSubredes'
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        result = response_data.get('result')
+        msg = response_data.get('msg') 
+        
+        if MensajeResultados.success == result:
+            print(f'\nListo! {msg}')
+        else:
+            print(f'\nUps! {msg}')
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
+    return []
+
 def set_new_user(name,rol,email):
     animation_thread = threading.Thread(target=loading_animation)
     animation_thread.start()

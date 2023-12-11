@@ -1,5 +1,6 @@
 import os
 import platform
+import subprocess
 import tempfile
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ class GraphHelper:
     G = nx.Graph()  # crear un grafo
     
     @staticmethod
-    def _showImage():
+    def _showImage(title):
         fig, ax = plt.subplots(figsize=(8, 5))
         layout = nx.spring_layout(GraphHelper.G)  # Layout spring
 
@@ -26,7 +27,7 @@ class GraphHelper:
         node_labels = {node: node for node in GraphHelper.G.nodes()}
         nx.draw_networkx_labels(GraphHelper.G, layout, labels=node_labels, ax=ax, font_size=10, verticalalignment='center', horizontalalignment='center')
 
-        ax.set_title("Network Diagram")
+        ax.set_title(f"Topología {title}")
         # Genera un nombre de archivo aleatorio
         temp_dir = tempfile.gettempdir()
         filename = os.path.join(temp_dir, next(tempfile._get_candidate_names()) + ".png")
@@ -35,7 +36,12 @@ class GraphHelper:
         if platform.system() == "Windows":
             # Abrir el archivo PNG con el visor de imágenes predeterminado
             os.startfile(filename)  
-
+        else:
+            # Intenta abrir el archivo PNG con el visor de imágenes predeterminado en sistemas basados en Unix/Linux
+            try:
+                subprocess.Popen(["xdg-open", filename])
+            except OSError as e:
+                print(f"No se pudo abrir el visor de imágenes: {e}")
         GraphHelper.G.clear()
         return filename
     
@@ -52,7 +58,7 @@ class GraphHelper:
 
         for vm1, vm2 in zip(vms, vms[1:] + [vms[0]]):
             GraphHelper.G.add_edge(vm1, vm2)
-        return GraphHelper._showImage()
+        return GraphHelper._showImage("Anillo")
 
 
     @staticmethod
@@ -75,7 +81,7 @@ class GraphHelper:
             switch_name = switches[switch_index]
             GraphHelper.G.add_node(vm_name)
             GraphHelper.G.add_edge(switch_name, vm_name)
-        return GraphHelper._showImage()
+        return GraphHelper._showImage("Arbol")
 
 
 

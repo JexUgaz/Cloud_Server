@@ -6,7 +6,7 @@ from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
 from config.graphs import GraphHelper
 from services.connection_functions import add_new_image, delete_image, get_all_images_user
-listTopologias=["Arbol","Anillo","Lineal","Bus","Cancelar"]
+listTopologias=["Arbol","Anillo","Cancelar"]
 
 _usuario_global=None
 
