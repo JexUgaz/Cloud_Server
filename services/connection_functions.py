@@ -3,7 +3,7 @@ import threading
 import requests
 from entities.SliceEntity import SliceEntity
 from entities.TopologiaEntity import TopologiaEntity
-from prettyTable import PrettyTable
+from prettytable import PrettyTable
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
 from entities.ImageEntity import ImagenEntity
 from entities.UserEntity import UserEntity
