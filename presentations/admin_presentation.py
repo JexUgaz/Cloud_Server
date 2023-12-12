@@ -45,7 +45,7 @@ def showMenuAdministrador(user:UserEntity):
             AdministradorSubredes()
         elif seleccion==choices[6]:
             monitorear_asignacion_recursos()
-            print("\nPresione una tecla para continuar...")
+            printWaiting("")
         elif seleccion==choices[7]:
             monitorear_uso_recursos()
         elif seleccion==choices[0]:
