@@ -42,7 +42,7 @@ def showMenuAdministrador(user:UserEntity):
             AdministradorAlertas()
         elif seleccion==choices[5]:
             monitorear_asignacion_recursos()
-            print("\nPresione una tecla para continuar...")
+            printWaiting("\nPresione una tecla para continuar...")
         elif seleccion==choices[6]:
             monitorear_uso_recursos()
         elif seleccion==choices[0]:
