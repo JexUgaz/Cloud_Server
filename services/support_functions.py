@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from openstack_sdk import password_authentication_with_scoped_authorization, assign_role_to_user_on_project, create_project, list_projects, create_network, create_subnet, create_port, get_server_console, create_server, list_flavors, list_images, token_authentication_with_scoped_authorization
+from openstack_sdk import password_authentication_with_scoped_authorization, assign_role_to_user_on_project, create_project, list_projects, create_network, create_subnet, create_port, get_server_console, create_server, list_flavors, list_images, token_authentication_with_scoped_authorization, list_instances
 import os
 
 load_dotenv()
@@ -29,6 +29,86 @@ TARGET_PORT = os.getenv("TARGET_PORT") # ------------------ DONE
 TARGET_HOST = os.getenv("TARGET_HOST") # ------------------ DONE
 
 EXTERNAL_NETWORK_ID = os.getenv("EXTERNAL_NETWORK_ID") # ------------------ DONE
+def get_topologies(user_id):
+    admin_token = get_token_for_admin()
+    r = list_projects(KEYSTONE_ENDPOINT, admin_token, user_id)
+    if r.status_code == 200:
+        topologies = []
+        topology_list = r.json()['projects']
+        counter = 1
+        for t in topology_list:
+            #topology_object = Topology(t['id'], t['name'], t['description'])
+            topologies.append([str(counter), t['id'],t['name']])
+            counter += 1
+        return topologies
+    else:
+        return None
+
+def eliminate_topology(project_id):
+    token_for_project = get_token_for_admin_in_project(project_id)
+
+    print('instances')
+    r1 = list_instances(NOVA_ENDPOINT, token_for_project,project_id)
+    if r1.status_code == 200:
+        instances = r1.json()['servers']
+    else:
+        return None
+    for ins in instances:
+        ins_id = ins['id']
+
+        r11 = delete_server(NOVA_ENDPOINT, token_for_project, ins_id)
+        if r11.status_code == 204:
+            print(ins_id)
+            print('INSTANCIA BORRADA CORRECTAMENTE')
+        #print(ins_id)
+
+    print('ports')
+    r2 = list_ports(NEUTRON_ENDPOINT, token_for_project, project_id)
+    if r2.status_code != 200:
+        return None
+    ports = r2.json()['ports']
+    print(len(ports))
+    for port in ports:
+        port_id = port['id']
+        r21 = delete_port(NEUTRON_ENDPOINT, token_for_project, port_id)
+        if r21.status_code == 204:
+            print(port_id)
+            print('PUERTO BORRADO CORRECTAMENTE')
+        #print(port_id)
+    
+    print('subnets')
+    r3 = list_subnets(NEUTRON_ENDPOINT, token_for_project, project_id)
+    if r3.status_code != 200:
+        return None
+    subnets = r3.json()['subnets']
+    print(len(subnets))
+    for sn in subnets:
+        sn_id = sn['id']
+        r31 = delete_subnet(NEUTRON_ENDPOINT, token_for_project, sn_id)
+        if r31.status_code == 204:
+            print(sn_id)
+            print('SUBRED BORRADA CORRECTAMENTE')
+        print(sn_id)
+    
+    print('networks')
+    r4 = list_networks(NEUTRON_ENDPOINT, token_for_project, project_id)
+    if r4.status_code != 200:
+        return None
+    nets = r4.json()['networks']
+    print(len(nets))
+    for net in nets:
+        net_id = net['id']
+        r41 = delete_network(NEUTRON_ENDPOINT, token_for_project, net_id)
+        if r41.status_code == 204:
+            print(net_id)
+            print('RED BORRADA CORRECTAMENTE')
+        print(net_id)
+    
+    r5 = delete_project(KEYSTONE_ENDPOINT, token_for_project, project_id)
+    if r5.status_code == 204:
+        print('TOPOLOGIA BORRADA CORRECTAMENTE')
+    
+    return None
 
 def get_token_for_admin():
     r = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, ADMIN_USER_ID, ADMIN_USER_PASSWORD, DOMAIN_ID, ADMIN_PROJECT_ID)
@@ -234,6 +314,7 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
                 vms[i+1]['networks'].append({"port": port_obj_2['id']})
                 vms[i+1]['networks'].append({"port": port_obj_4['id']})
     
+    '''
     for instance in vm_list:
         if instance.internet == "True":
             port_obj_int = build_port(token_for_project, 'internet', EXTERNAL_NETWORK_ID, topology_id)
@@ -241,6 +322,7 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
             for j in vms:
                 if j['name'] == instance.nombre:
                     j['networks'].append({"port": port_obj_int['id']})
+    '''
     
     import json
     print(json.dumps({'lista':vms}))

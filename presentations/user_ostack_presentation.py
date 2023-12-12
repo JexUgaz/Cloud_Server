@@ -6,7 +6,7 @@ from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine, VirtualMachine_op
 from config.graphs import GraphHelper
 from services.connection_functions import add_new_image, delete_image, get_all_images_user
-from services.support_functions import get_token_for_admin, get_token_for_admin_in_project, get_flavors, get_images, build_network, build_subnet, build_port, get_console_url_per_instance, create_topology
+from services.support_functions import get_token_for_admin, get_token_for_admin_in_project, get_flavors, get_images, build_network, build_subnet, build_port, get_console_url_per_instance, create_topology, get_topologies,eliminate_topology
 #from presentations.user_presentation import ret_global
 #from openstack_sdk import password_authentication_with_unscoped_authorization,password_authentication_with_scoped_authorization,monitorear_asignacion_servidores,token_authentication_with_scoped_authorization,assign_role_to_user_on_project,create_project,list_projects
 #from openstack_sdk import create_network, create_subnet, create_port, get_server_console, create_server, list_flavors, list_images
@@ -169,7 +169,7 @@ def detallesCreacionExitosa(slice:Slice):
         print(f"Flavor: {vm.flavor}")
         print(f"RAM: {vm.sizeRam}MB")
         print(_usuario_global.id)
-        print(f"internet: {vm.internet}")
+        #print(f"internet: {vm.internet}")
         i=i+1
     
     '''
@@ -264,7 +264,7 @@ def setDetailsVM(i):
         memoria=float(input("Indique la memoria RAM de la VM: "))
         if (memoria>=100 and memoria<=200):
             print(f"Se creará la VM #{i+1} con la imagen {imagenSelected}, con flvor {flavorSelected} y memoria RAM de {memoria}MB")
-            return False,VirtualMachine_op(id=None,nombre=nombreVM,sizeRam=memoria,flavor= flavorSelected,fechaCreacion=None,dirMac=None,portVNC=None,internet =InternetSelected ,zonaID=None,imagen=imagenSelected)
+            return False,VirtualMachine_op(id=None,nombre=nombreVM,sizeRam=memoria,flavor= flavorSelected,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagenSelected)
         else:
             printWaiting("Valor fuera del rango establecido...CREACIÓN CANCELADA")
     except ValueError:
@@ -272,12 +272,16 @@ def setDetailsVM(i):
     return True,None
 
 def listarSliceUsuario():
+    listasAlumnos = get_topologies(_usuario_global.id)
+
+    '''
     listasAlumnos = [['1', 'Tarea', "21/10/2023", 2, 1],
                      ['2', 'Laboratorio', "23/05/2023", 7, 8],
                      ['3', 'Examen', "11/12/2023", 7, 8]]
+    '''
+    #headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
+    headers = ["N°","id", "Nombre"]
 
-    headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
-    
     choices=["Ver más detalles de un slice","Borrar un slice","Volver"]
 
     while True:
@@ -288,7 +292,7 @@ def listarSliceUsuario():
         seleccion = setListOptionsShell(
             message="Seleccione una opción: ",
             choices=choices
-        ) 
+        )
         if seleccion==choices[0]:
             try:
                 numero=int(input("Indique el índice del slice a detallar (1-" + str(len(listasAlumnos)) + "): "))
@@ -304,6 +308,9 @@ def listarSliceUsuario():
             try:
                 numero=int(input("Indique el índice del slice a borrar (1-" + str(len(listasAlumnos)) + "): "))
                 if 1 <= numero and numero <= len(listasAlumnos):
+                    print(numero)
+            
+                    eliminate_topology(listasAlumnos[numero-1][0])
                     printWaiting("Se ha borrado el slice: " + str(numero))
                 else:
                     printWaiting("Por favor, ingrese un número válido dentro del rango.")

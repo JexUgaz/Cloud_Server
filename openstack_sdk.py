@@ -293,3 +293,48 @@ def list_images(auth_endpoint, token, limit=None):
     else:
         r = requests.get(url=url, headers=headers)
     return r
+
+def delete_server(auth_endpoint, token, server_id):
+    url = auth_endpoint + '/servers/' + server_id
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.delete(url=url, headers=headers)
+    # status_code success = 204
+    return r
+
+def delete_port(auth_endpoint, token, port_id):
+    url = auth_endpoint + '/ports/' + port_id
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.delete(url=url, headers=headers)
+    # status_code success = 204
+    return r
+
+def delete_subnet(auth_endpoint, token, subnet_id):
+    url = auth_endpoint + '/subnets/' + subnet_id
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.delete(url=url, headers=headers)
+    # status_code success = 204
+    return r
+
+def delete_network(auth_endpoint, token, network_id):
+    url = auth_endpoint + '/networks/' + network_id
+    headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+    r = requests.delete(url=url, headers=headers)
+    # status_code success = 204
+    return r
+
+
+def list_instances(nova_endpoint, token, project_id=None):
+        #url = nova_endpoint + '/servers'
+        url = nova_endpoint + '/servers/detail'
+        headers = {'Content-type': 'application/json', 'X-Auth-Token': token}
+
+        params = {'all_tenants': True}
+        if project_id:
+            params = {'all_tenants': True, 'project_id': project_id}
+
+        r = requests.get(url=url, headers=headers, params=params)
+        return r
