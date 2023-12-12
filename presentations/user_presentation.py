@@ -5,7 +5,7 @@ from entities.SliceEntity import SliceEntity
 from entities.UserEntity import UserEntity
 from entities.VirtualMachineEntity import VirtualMachine
 from config.graphs import GraphHelper
-from services.connection_functions import add_new_image, add_new_slice, delete_image, get_all_images_user, get_all_topologias
+from services.connection_functions import add_new_image, add_new_slice, delete_image, delete_slice, get_all_images_user, get_all_topologias, get_all_vm_slice, get_slices_user
 listTopologias=["Arbol","Anillo","Cancelar"]
 
 _usuario_global=None
@@ -177,12 +177,12 @@ def detallesCreacionExitosa(slice:SliceEntity):
     setBarra(text="Slice",enter=True)
     print(f"Nombre: {slice.nombre}")
     print(f"N° Vms: {len(slice.vms)}")
-    print(f"Topología: {slice.topologia}\n")
+    print(f"Topología: {slice.topologia.nombre}\n")
     i=1
     for vm in slice.vms:
         setBarra(text=f"VM #{i}")
         print(f"Nombre: {vm.nombre}")
-        print(f"Imagen: {vm.imagen}")
+        print(f"Imagen: {vm.imagen.nombre}")
         print(f"RAM: {vm.sizeRam}MB")
         i=i+1
     filename=""
@@ -218,7 +218,7 @@ def listarTopologias(cant_vm):
             listVM.append(virtualMachine)
         topologia = [topologia for topologia in topologias if topologia.nombre == topologiaSelected]
 
-        return topologia,listVM
+        return topologia[0],listVM
     else:
         printWaiting("CREACIÓN CANCELADA...")
         return None,None
@@ -245,8 +245,8 @@ def setDetailsVM(i):
         memoria=float(input("Indique la memoria RAM de la VM: "))
         if (memoria>=100 and memoria<=200):
             print(f"Se creará la VM #{i+1} con la imagen {imagenSelected} y memoria RAM de {memoria}MB")
-            imagen = [image for image in images if image.nombre == imagenSelected]
-            return False,VirtualMachine(id=None,nombre=nombreVM,sizeRam=memoria,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagen)
+            imagenFinal = [image for image in images if image.nombre == imagenSelected]
+            return False,VirtualMachine(id=None,nombre=nombreVM,sizeRam=memoria,fechaCreacion=None,dirMac=None,portVNC=None,zonaID=None,imagen=imagenFinal[0])
         else:
             printWaiting("Valor fuera del rango establecido...CREACIÓN CANCELADA")
     except ValueError:
@@ -254,42 +254,58 @@ def setDetailsVM(i):
     return True,None
 
 def listarSliceUsuario():
-    listasAlumnos = [['1', 'Tarea', "21/10/2023", 2, 1],
-                     ['2', 'Laboratorio', "23/05/2023", 7, 8],
-                     ['3', 'Examen', "11/12/2023", 7, 8]]
-
-    headers = ["N°", "Nombre", "Fecha", "Número VMs", "Número Enlaces"]
-    
+    headers=["N°","Nombre","N° VMs","Topologia","Red","Fecha de creación"]
     choices=["Ver más detalles de un slice","Borrar un slice","Volver"]
 
     while True:
         clearScreen()
-        setBarra(text="Sus Slices",enter=True)
-        print(tabulate.tabulate(listasAlumnos, headers, tablefmt="fancy_grid"))
-
-        seleccion = setListOptionsShell(
-            message="Seleccione una opción: ",
-            choices=choices
-        ) 
-        if seleccion==choices[0]:
-            try:
-                numero=int(input("Indique el índice del slice a detallar (1-" + str(len(listasAlumnos)) + "): "))
-                if 1 <= numero and numero <= len(listasAlumnos):
-                    clearScreen()
-                    setBarra(text=f"Los detalles del slice {numero}", enter=True)
-                    printWaiting(tabulate.tabulate([listasAlumnos[numero-1]], headers, tablefmt="fancy_grid"))  
-                else:
-                    printWaiting("Por favor, ingrese un número válido dentro del rango.")
-            except ValueError:
-                    printWaiting("Por favor, ingrese un índice válido.")                 
-        elif seleccion==choices[1]:
-            try:
-                numero=int(input("Indique el índice del slice a borrar (1-" + str(len(listasAlumnos)) + "): "))
-                if 1 <= numero and numero <= len(listasAlumnos):
-                    printWaiting("Se ha borrado el slice: " + str(numero))
-                else:
-                    printWaiting("Por favor, ingrese un número válido dentro del rango.")
-            except ValueError:
-                printWaiting("Por favor, ingrese un índice válido.") 
-        else:
+        slices = get_slices_user(_usuario_global.id)
+        listas_slices = [[index+1,slice["nombre"],slice["n_nodos"],slice["topologia"],slice["dir_red"],slice["fecha_creacion"]] for index,slice in enumerate(slices)]
+        clearScreen()
+        setTitle(title="Sus Slices")
+        if(len(listas_slices)==0):
+            printWaiting("No tiene slices creados...")
             break
+        else:
+            print(tabulate.tabulate(listas_slices, headers, tablefmt="fancy_grid"))
+
+            seleccion = setListOptionsShell(
+                message="Seleccione una opción: ",
+                choices=choices
+            ) 
+            if seleccion==choices[0]:
+                try:
+                    numero=int(input("Indique el índice del slice a detallar (1-" + str(len(listas_slices)) + "): "))
+                    if 1 <= numero and numero <= len(listas_slices):
+                        verDetallesSlice(numero=numero,slice=listas_slices[numero-1],id_vlan=slices[numero-1]["id_vlan"])
+                    else:
+                        printWaiting("Por favor, ingrese un número válido dentro del rango.")
+                except ValueError:
+                        printWaiting("Por favor, ingrese un índice válido.")                 
+            elif seleccion==choices[1]:
+                try:
+                    numero=int(input("Indique el índice del slice a borrar (1-" + str(len(listas_slices)) + "): "))
+                    if 1 <= numero and numero <= len(listas_slices):
+                        clearScreen()
+                        delete_slice(idSlice=slices[numero-1]["id_vlan"])
+                        printWaiting("")
+                    else:
+                        printWaiting("Por favor, ingrese un número válido dentro del rango.")
+                except ValueError:
+                    printWaiting("Por favor, ingrese un índice válido.") 
+            else:
+                break
+
+def verDetallesSlice(numero,slice,id_vlan):
+    clearScreen()
+    vms=get_all_vm_slice(id_vlan=id_vlan)
+    clearScreen()
+    setBarra(text=f"Los detalles del slice N° {numero}", enter=True)
+    headers=["Nombre","N° VMs","Topologia","Red","Fecha de creación"]
+    print(tabulate.tabulate([[slice[1],slice[2],slice[3],slice[4],slice[5]]], headers, tablefmt="fancy_grid"))  
+    print()
+    setBarra(text=f"Máquinas Virtuales del slice N° {numero}", enter=True)
+    list_vms=[[vm.nombre,vm.dirMac,vm.portVNC,vm.sizeRam,vm.fechaCreacion] for vm in vms]
+    headers=["Nombre","MAC","Puerto VNC","RAM","Fecha de creación"]
+    printWaiting(tabulate.tabulate(list_vms, headers, tablefmt="fancy_grid"))  
+    

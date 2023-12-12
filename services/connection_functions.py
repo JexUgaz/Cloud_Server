@@ -3,6 +3,7 @@ import threading
 import requests
 from entities.SliceEntity import SliceEntity
 from entities.TopologiaEntity import TopologiaEntity
+from entities.VirtualMachineEntity import VirtualMachine
 from prettytable import PrettyTable
 from config.helpers import MensajeResultados, cancel_loading_done, loading_animation
 from entities.ImageEntity import ImagenEntity
@@ -12,7 +13,6 @@ from services.constantes_env import DOMAIN_NAME, KEYSTONE_ENDPOINT, NOVA_ENDPOIN
 
 prefix_user='/user'
 def autenticar_usuario(username, password):
-    print(f"{username} {password}")
     r = password_authentication_with_unscoped_authorization(KEYSTONE_ENDPOINT, DOMAIN_ID, username, password)
     if r is not None:
         if r.status_code == 201:
@@ -66,36 +66,57 @@ def add_new_image(link, idUser, nombre):
         cancel_loading_done()  
         animation_thread.join() 
 
+class _MyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ImagenEntity):
+            return obj.__dict__  # Si es un objeto ImagenEntity, conviértelo a un diccionario
+        return super().default(obj)
 
-def add_new_slice(slice:SliceEntity):
+
+def add_new_slice(slice: SliceEntity):
     animation_thread = threading.Thread(target=loading_animation)
     animation_thread.start()
-    
+
     url = SERVER_API_ENDPOINT + prefix_user + '/setNewSlice'
-    data = slice.toJSON()
 
     try:
-        r = requests.post(url=url, data=data, stream=True)
+        data = {
+            'id_vlan': slice.id_vlan,
+            'nombre': slice.nombre,
+            'vms': json.dumps([vm.__dict__ for vm in slice.vms],cls=_MyEncoder),  # Convierte la lista de objetos a una lista de diccionarios
+            'nombre_dhcp': slice.nombre_dhcp,
+            'topologia': json.dumps(slice.topologia.__dict__),  # Convierte el objeto a un diccionario
+            'infraestructura': slice.infraestructura,
+            'fecha_creacion': slice.fecha_creacion,
+            'usuario_id': slice.usuario_id,
+            'subred': slice.subred,
+        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        r = requests.post(url=url, data=data, stream=True, headers=headers)
         response_data = json.loads(r.text)
 
         result = response_data.get('result')
         msg = response_data.get('msg')
 
-        cancel_loading_done()  
-        animation_thread.join()  
+        cancel_loading_done()
+        animation_thread.join()
 
         if MensajeResultados.success == result:
             print(f'\nListo! {msg}')
+            idSlice = response_data.get('idSlice')
+            ports = response_data.get('ports')
+            print(f"Vlan asignado: {idSlice}")
+            print(f"Puertos VNC: {ports}")
         else:
             print(f'\nUps! {msg}')
     except requests.exceptions.RequestException as e:
-        cancel_loading_done()      
-        animation_thread.join()  # Espera a que el hilo de animación termine
         print("Error en la solicitud: ", e)
     except Exception as e:
-        cancel_loading_done()        
-        animation_thread.join()  # Espera a que el hilo de animación termine
         print("Error no manejado: ", e)
+    finally:
+        cancel_loading_done()
+        animation_thread.join()  # Espera a que el hilo de animación termine
+
         
 def get_all_images_user(idUser):
     url = SERVER_API_ENDPOINT + prefix_user+'/getImagesByUser?idUser='+idUser
@@ -116,6 +137,29 @@ def get_all_images_user(idUser):
         cancel_loading_done()  
         animation_thread.join()  
     return []
+
+
+        
+def get_all_vm_slice(id_vlan):
+    url = SERVER_API_ENDPOINT + prefix_user+'/getAllVMs?idSlice='+id_vlan
+    try:
+        animation_thread = threading.Thread(target=loading_animation)
+        animation_thread.start()
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        vms_json = response_data.get('vms', [])
+        
+        # Convertir la lista de objetos JSON a objetos UserEntity
+        vms = [VirtualMachine(id=vm["id"],nombre=vm["nombre"],sizeRam=vm["sizeRam"],fechaCreacion=vm["fechaCreacion"],dirMac=vm["dirMac"],portVNC=vm["portVNC"],zonaID=vm["zonaID"],imagen=None) for vm in vms_json]
+        
+        return vms
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join()  
+    return []
+
 
 def get_all_topologias():
     url = SERVER_API_ENDPOINT + prefix_user+'/getAllTopologias'
@@ -140,6 +184,8 @@ def get_all_topologias():
 def delete_image(idImage):
     url = SERVER_API_ENDPOINT + prefix_user+f'/deleteImage?idImage={idImage}'
     try:
+        animation_thread = threading.Thread(target=loading_animation)
+        animation_thread.start()
         r = requests.get(url=url)
         response_data = json.loads(r.text)
         result = response_data.get('result')
@@ -151,7 +197,31 @@ def delete_image(idImage):
             print(f'\nUps! {msg}')
     except requests.exceptions.RequestException as e:
         print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
     return []
+
+def delete_slice(idSlice):
+    url = SERVER_API_ENDPOINT + prefix_user+f'/deleteSlice?idSlice={idSlice}'
+    try:
+        animation_thread = threading.Thread(target=loading_animation)
+        animation_thread.start()
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        result = response_data.get('result')
+        msg = response_data.get('msg')
+
+        if MensajeResultados.success == result:
+            print(f'\nListo! {msg}')
+        else:
+            print(f'\nUps! {msg}')
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join()
+
 
 def monitorear_asignacion_recursos():
     #is_autenthicated,user,user_token=autenticar_usuario(ADMIN_USERNAME,ADMIN_PASSWORD)
@@ -197,6 +267,25 @@ def monitorear_asignacion_recursos():
         table.add_row(row.values())
     
     print(table)
+
+def get_slices_user(idUser):
+    animation_thread = threading.Thread(target=loading_animation)
+    animation_thread.start()
+    url = SERVER_API_ENDPOINT + prefix_user+'/getSlicesByUser?idUser='+idUser
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        slices_json = response_data.get('slices', [])
+        
+        return slices_json
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
+    return []
+
+
 
 '''
 def crear_instancia(nombre_instancia, imagen_id, flavor_id,network_list=[]):

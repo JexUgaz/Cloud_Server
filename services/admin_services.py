@@ -65,6 +65,25 @@ def get_all_subredes():
     return []
 
 
+
+def get_all_slices():
+    animation_thread = threading.Thread(target=loading_animation)
+    animation_thread.start()
+    url = SERVER_API_ENDPOINT + prefix_admin+'/listSlices'
+    try:
+        r = requests.get(url=url)
+        response_data = json.loads(r.text)
+        slices_json = response_data.get('slices', [])
+        
+        return slices_json
+    except requests.exceptions.RequestException as e:
+        print("Error en la solicitud: ", e)
+    finally:
+        cancel_loading_done()  
+        animation_thread.join() 
+    return []
+
+
 def set_new_subredes():
     animation_thread = threading.Thread(target=loading_animation)
     animation_thread.start()
