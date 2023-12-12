@@ -6,6 +6,7 @@ from entities.UserEntity import UserEntity
 from services.admin_services import get_all_users, get_monitoreo_recursos
 from services.connection_functions import monitorear_asignacion_recursos
 
+
 def AgregarUsuario():
     print("Ha selecionado la opción de: Agregar Usuario")
     # Capturar datos del usuario
