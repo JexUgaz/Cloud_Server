@@ -4,6 +4,7 @@ from config.helpers import clearScreen, printWaiting, setBarra
 from services.connection_functions import autenticar_usuario, get_usuario_credentials
 from presentations.admin_presentation import showMenuAdministrador
 from presentations.user_presentation import showMenuUser
+from presentations.user_ostack_presentation import showMenuUserOstack
 
 def main_function():
     clearScreen()
@@ -23,6 +24,8 @@ def main_function():
     input('presiona enter...')
     if user is None:
         return
+    if user.roles_id==RolesGlobal.usuario and user.nombre=='niurka':
+        showMenuUserOstack(user=user)
     if user.roles_id==RolesGlobal.usuario:
         showMenuUser(user=user)
     elif user.roles_id==RolesGlobal.administrador:

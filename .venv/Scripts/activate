@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Valeria\Downloads\proy_niurka\proy_niurka\Cloud_Server\.venv"
+VIRTUAL_ENV="C:\Users\pelusa\Downloads\niurka_uv\Cloud_Server\.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

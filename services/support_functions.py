@@ -28,6 +28,8 @@ COMPUTE_API_VERSION = os.getenv("COMPUTE_API_VERSION") # ------------------ DONE
 TARGET_PORT = os.getenv("TARGET_PORT") # ------------------ DONE
 TARGET_HOST = os.getenv("TARGET_HOST") # ------------------ DONE
 
+EXTERNAL_NETWORK_ID = os.getenv("EXTERNAL_NETWORK_ID") # ------------------ DONE
+
 def get_token_for_admin():
     r = password_authentication_with_scoped_authorization(KEYSTONE_ENDPOINT, ADMIN_USER_ID, ADMIN_USER_PASSWORD, DOMAIN_ID, ADMIN_PROJECT_ID)
     if r.status_code == 201:
@@ -125,10 +127,10 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
     vms = []
     for vm in vm_list:
         vms.append({
-            'name':vm.name,
-            'image':vm.image,
+            'name':vm.nombre,
+            'image':vm.imagen,
             'flavor':vm.flavor,
-            'networks':[]
+            'networks':[],
         })
     
     # OBTENER TOKEN
@@ -140,10 +142,16 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
         return None
     t = r1.json()['project']
     topology_id = t['id']
+    print(topology_id)
+    print(ADMIN_USER_ID)
+    print(ADMIN_ROLE_ID)
 
     # ASIGNAR ROLE ADMIN AL USUARIO ADMIN
     r2 = assign_role_to_user_on_project(KEYSTONE_ENDPOINT, admin_token, topology_id, ADMIN_USER_ID, ADMIN_ROLE_ID)
     r3 = assign_role_to_user_on_project(KEYSTONE_ENDPOINT, admin_token, topology_id, user_id, ADMIN_ROLE_ID)
+
+    print(r2.status_code)
+    print(r3.status_code)
 
     if r2.status_code != 204:
         return None
@@ -151,7 +159,9 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
         return None
     
     token_for_project = get_token_for_admin_in_project(topology_id)
-
+    print(token_for_project)
+    
+    
     if type_topology == 'Anillo':
         for i in range(num_vms):
             network_name = 'red ' + str(i+1)
@@ -166,6 +176,7 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
                 vms[0]['networks'].append({"port": port_obj_2['id']})
             else:
                 vms[i+1]['networks'].append({"port": port_obj_2['id']})
+    
 
     if type_topology == 'Lineal':
         for i in range(num_vms-1):
@@ -174,8 +185,10 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
             net = build_network(token_for_project, network_name)
             network_id = net['id']
             sub = build_subnet(token_for_project, network_name, network_id, cidr)
+            
             port_obj_1 = build_port(token_for_project, network_name, network_id, topology_id)
             port_obj_2 = build_port(token_for_project, network_name, network_id, topology_id)
+            
             vms[i]['networks'].append({"port": port_obj_1['id']})
             vms[i+1]['networks'].append({"port": port_obj_2['id']})
 
@@ -221,8 +234,22 @@ def create_topology(vm_list, type_topology, topology_name, topology_description,
                 vms[i+1]['networks'].append({"port": port_obj_2['id']})
                 vms[i+1]['networks'].append({"port": port_obj_4['id']})
     
+    for instance in vm_list:
+        if instance.internet == "True":
+            port_obj_int = build_port(token_for_project, 'internet', EXTERNAL_NETWORK_ID, topology_id)
+            #port_int_id = port_obj_int['id']
+            for j in vms:
+                if j['name'] == instance.nombre:
+                    j['networks'].append({"port": port_obj_int['id']})
+    
+    import json
+    print(json.dumps({'lista':vms}))
+    
+    print('INICIANDO CREACION DE VMS')
     for instance in vms:
         r6 = create_server(NOVA_ENDPOINT, token_for_project, instance['name'], instance['flavor'], instance['image'], instance['networks'])
         if r6.status_code != 202:
             return None
         print('INSTANCIA CREADA CORRECTAMENTE')
+    
+    
